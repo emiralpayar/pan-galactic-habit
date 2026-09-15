@@ -378,6 +378,7 @@ See [AGENTS.md](AGENTS.md) and [docs/development/agentic-development.md](docs/de
 - Pin versions exactly (lock files, pinned MCP server versions, pinned GitHub Actions major versions).
 - A new dependency needs a one-line justification in the PR description: what it does and why we can't reasonably do without it.
 - Dependabot opens update PRs weekly; they go through the same review.
+- **Dependabot PR titles are checked like any other PR title**, except for the length limit. Dependabot sometimes capitalizes the subject (`ci(deps): Bump …`); when the PR title check fails, edit the title to lowercase (`ci(deps): bump …`) before merging, and re-check it right before merging because Dependabot may rewrite it when it updates the PR. Its individual commit messages are not checked, since they are squashed away.
 
 ---
 

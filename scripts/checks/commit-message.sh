@@ -7,6 +7,10 @@
 #   scripts/checks/commit-message.sh <file>                # commit-msg hook
 #   scripts/checks/commit-message.sh --message "<text>"    # a full commit message
 #   scripts/checks/commit-message.sh --pr-title "<text>"   # a PR title
+#
+# Options:
+#   --no-length-limit   Skip the header length rule; every other rule still applies.
+#                       For tool-generated titles (Dependabot) that humans cannot shorten upfront.
 
 set -euo pipefail
 export LC_ALL=C
@@ -16,26 +20,51 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$here/../lib/conventions.sh"
 
 usage() {
-  sed -n '3,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+  sed -n '3,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
 }
 
 mode="message"
-case "${1:-}" in
-  --pr-title)
-    mode="pr-title"
-    text="${2:-}"
-    ;;
-  --message)
-    text="${2:-}"
-    ;;
-  -h | --help | "")
-    usage
-    exit 2
-    ;;
-  *)
-    text="$(cat "$1")"
-    ;;
-esac
+length_limit=true
+text=""
+have_input=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --pr-title)
+      mode="pr-title"
+      text="${2:-}"
+      have_input=true
+      shift 2 || { usage; exit 2; }
+      ;;
+    --message)
+      text="${2:-}"
+      have_input=true
+      shift 2 || { usage; exit 2; }
+      ;;
+    --no-length-limit)
+      length_limit=false
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 2
+      ;;
+    -*)
+      fail "Unknown option: $1"
+      usage
+      exit 2
+      ;;
+    *)
+      text="$(cat "$1")"
+      have_input=true
+      shift
+      ;;
+  esac
+done
+
+if ! $have_input; then
+  usage
+  exit 2
+fi
 
 # Drop everything below git's scissors line (commit --verbose) and comment lines.
 text="$(printf '%s\n' "$text" | sed '/^# -\{24\} >8 -\{24\}$/,$d' | grep -v '^#' || true)"
@@ -99,7 +128,7 @@ fi
 scope="${BASH_REMATCH[3]}"
 subject="${BASH_REMATCH[5]}"
 
-if [ "${#header}" -gt "$HEADER_MAX_LENGTH" ]; then
+if $length_limit && [ "${#header}" -gt "$HEADER_MAX_LENGTH" ]; then
   explain "header is ${#header} characters; the maximum is ${HEADER_MAX_LENGTH}."
 fi
 
