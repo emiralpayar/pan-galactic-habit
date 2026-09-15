@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Run markdownlint
+        run: make lint-md
+
+  shell:
+    name: Shell lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run shellcheck
+        run: make lint-sh
+      - name: Check executable bits
+        run: |
+          status=0
+          for f in .githooks/* scripts/*.sh scripts/checks/*.sh .claude/hooks/*.sh; do
+            [ -x "$f" ] || { echo "::error file=$f::not executable (git update-index --chmod=+x $f)"; status=1; }
+          done
+          exit "$status"

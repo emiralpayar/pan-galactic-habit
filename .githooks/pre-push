@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Blocks pushes to main and pushes of branches that do not follow the naming conventions.
+# Installed by `make setup`. The GitHub ruleset enforces the same on the server.
+
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+status=0
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      # Bootstrap exception: creating main on a remote where it does not exist yet.
+      if [[ "$remote_sha" =~ ^0+$ ]] && ! [[ "$local_sha" =~ ^0+$ ]]; then
+        echo "! Creating 'main' on the remote (repository bootstrap)." >&2
+        continue
+      fi
+      cat >&2 <<'EOF'
+✖ Pushing to main is not allowed.
+
+  Push your branch and open a pull request instead:
+    git push -u origin HEAD
+    gh pr create
+
+  See CONTRIBUTING.md#workflow
+EOF
+      status=1
+      ;;
+    refs/heads/*)
+      # Deleting a remote branch needs no name check.
+      [[ "$local_sha" =~ ^0+$ ]] && continue
+      "$root/scripts/checks/branch-name.sh" "${remote_ref#refs/heads/}" || status=1
+      ;;
+  esac
+done
+
+exit "$status"

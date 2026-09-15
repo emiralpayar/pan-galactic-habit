@@ -1,0 +1,19 @@
+# Categories for GitHub's auto-generated release notes (CONTRIBUTING.md#versioning-and-releases).
+changelog:
+  exclude:
+    labels: [dependencies]
+  categories:
+    - title: ⚠️ Safety-critical changes
+      labels: [safety-critical]
+    - title: 🧠 Lobe memory
+      labels: [memory]
+    - title: ⚙️ Behavior
+      labels: [behavior]
+    - title: 🐛 Fixes
+      labels: [bug]
+    - title: 📚 Documentation
+      labels: [docs]
+    - title: 🛠️ Tooling and CI
+      labels: [dev-tooling, ci]
+    - title: Other changes
+      labels: ["*"]

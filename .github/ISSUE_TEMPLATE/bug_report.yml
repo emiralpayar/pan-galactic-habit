@@ -1,0 +1,59 @@
+name: Bug report
+description: Something does not work as intended.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps. Use synthetic data only — never paste real customer data or secrets.
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - A lobe (name it below)
+        - Safety Layer
+        - Adapter
+        - Orchestrator
+        - Improver
+        - Chat interface
+        - Deploy / CI
+        - Developer tooling
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Could this cause an unintended write to an external system?
+      description: If yes, consider reporting privately via the security advisory link instead.
+      options:
+        - "No"
+        - "Yes"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Lobe name, commit SHA of the deployment, logs (redacted), screenshots.

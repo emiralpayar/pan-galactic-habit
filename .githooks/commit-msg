@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# Validates the commit message against Conventional Commits.
+# Installed by `make setup`. See CONTRIBUTING.md#commit-messages.
+
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+exec "$root/scripts/checks/commit-message.sh" "$1"

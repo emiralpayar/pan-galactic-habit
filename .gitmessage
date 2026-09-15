@@ -1,0 +1,19 @@
+
+# <type>(<scope>)!: <subject>
+#
+# <body: why this change was made; wrap at 72 characters>
+#
+# <footers>
+#
+# ── Rules ───────────────────────────────────────────────────────────────
+# Header:  72 characters max. Subject: imperative, lowercase, no period.
+# Types:   feat fix docs refactor perf test build ci chore revert
+# Scopes:  repo dev ci deps docs safety-layer adapters orchestrator
+#          improver chat evals deploy, or any lobe/adapter directory name
+# Breaking change: add "!" before ":" and a "BREAKING CHANGE:" footer.
+# Footers: Refs: #123 | BREAKING CHANGE: ... | Co-Authored-By: ...
+#
+# Example:
+#   feat(safety-layer): enforce per-session write budgets
+#
+# See CONTRIBUTING.md#commit-messages

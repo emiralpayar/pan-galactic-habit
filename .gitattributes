@@ -1,0 +1,20 @@
+# Normalize line endings to LF in the repository.
+* text=auto eol=lf
+
+# Scripts must stay LF on every platform.
+*.sh        text eol=lf
+.githooks/* text eol=lf
+Makefile    text eol=lf
+
+# Better diffs for documentation and memory.
+*.md        text diff=markdown
+
+# Binary files.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary

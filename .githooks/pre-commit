@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#
+# Blocks commits on main and on branches that do not follow the naming conventions.
+# Installed by `make setup`. See CONTRIBUTING.md#workflow.
+
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+
+# The very first commit of a new repository is the only commit allowed on main.
+if ! git rev-parse --verify --quiet HEAD >/dev/null; then
+  exit 0
+fi
+
+branch="$(git symbolic-ref --short -q HEAD || true)"
+
+# Detached HEAD (e.g. mid-rebase): nothing to check.
+[ -n "$branch" ] || exit 0
+
+if [ "$branch" = "main" ]; then
+  cat >&2 <<'EOF'
+✖ Direct commits to main are not allowed.
+
+  Move your staged changes to a new branch and commit there:
+    git switch -c <type>/<issue>-<short-description>
+
+  See CONTRIBUTING.md#workflow
+EOF
+  exit 1
+fi
+
+exec "$root/scripts/checks/branch-name.sh" "$branch"

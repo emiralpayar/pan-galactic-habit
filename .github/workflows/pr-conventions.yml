@@ -1,0 +1,60 @@
+name: PR conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-conventions-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check branch name
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: scripts/checks/branch-name.sh "$BRANCH"
+
+  pr-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check PR title
+        # Dependabot titles can exceed the header length; its branch and labels are still checked.
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: scripts/checks/commit-message.sh --pr-title "$TITLE"
+
+  commit-messages:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check every commit in the PR
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            echo "::group::$(git log -1 --format='%h %s' "$sha")"
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/message"
+            scripts/checks/commit-message.sh "$RUNNER_TEMP/message" || status=1
+            echo "::endgroup::"
+          done
+          exit "$status"

@@ -1,0 +1,32 @@
+# Path-based PR labels (ARCHITECTURE.md §4.3). Used by .github/workflows/labeler.yml.
+# The safety-critical label is managed by the Safety guard workflow, not here.
+
+memory:
+  - changed-files:
+      - any-glob-to-any-file: "lobes/*/memory/**"
+
+behavior:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "lobes/*/agent/**"
+          - "orchestrator/**"
+          - "improver/**"
+          - "interface/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
+
+dev-tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".claude/**"
+          - ".githooks/**"
+          - "scripts/**"
+          - "Makefile"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**"

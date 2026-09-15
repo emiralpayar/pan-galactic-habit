@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "davidanson.vscode-markdownlint",
+    "timonwong.shellcheck",
+    "bierner.markdown-mermaid",
+    "github.vscode-pull-request-github",
+    "anthropic.claude-code"
+  ]
+}

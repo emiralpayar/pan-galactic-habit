@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a new capability or an improvement to an existing one.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are you trying to solve? Who has it?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How might it work? It's fine to leave this rough.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will we know it's done?
+      placeholder: |
+        - [ ] …
+    validations:
+      required: true
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - label: Changes a principle or decision in ARCHITECTURE.md (needs an ADR)
+        - label: Changes what the system may write to an external system (safety-critical)
+        - label: Requires a new external system integration (new adapter)

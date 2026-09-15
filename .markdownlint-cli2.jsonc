@@ -1,0 +1,22 @@
+{
+  // https://github.com/DavidAnson/markdownlint-cli2
+  "config": {
+    "default": true,
+    // Semantic line breaks (one sentence per line) make lines long; don't cap them.
+    "MD013": false,
+    // Allow <br/> in tables and diagrams.
+    "MD033": { "allowed_elements": ["br"] },
+    // Templates (PR, ADR) don't start with a top-level heading.
+    "MD041": false,
+    // Allow repeated headings in different sections (e.g. "Rules").
+    "MD024": { "siblings_only": true },
+    // Ordered lists may be numbered explicitly.
+    "MD029": { "style": "ordered" },
+    // Bold "Contents" / "Examples" labels are intentional, not headings.
+    "MD036": false,
+    // Don't require column-aligned tables: realigning a whole table on every edit makes noisy diffs.
+    "MD060": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["**/node_modules/**", "**/.venv/**", "**/dist/**", "**/build/**"]
+}

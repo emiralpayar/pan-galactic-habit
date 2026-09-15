@@ -1,0 +1,50 @@
+name: Safety guard
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write # to add/remove the safety-critical label
+
+concurrency:
+  group: safety-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  safety-guard:
+    name: Safety guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect safety-critical changes
+        id: guard
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: scripts/checks/safety-guard.sh --base "$BASE_SHA" --head "$HEAD_SHA"
+
+      - name: Add safety-critical label
+        if: always() && steps.guard.outputs.safety_critical == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+            -f "labels[]=safety-critical" --silent
+
+      - name: Remove stale safety-critical label
+        if: always() && steps.guard.outputs.safety_critical == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/safety-critical" \
+            --silent 2>/dev/null || true

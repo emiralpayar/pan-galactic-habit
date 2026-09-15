@@ -1,0 +1,61 @@
+name: Lobe request
+description: Request a new lobe — an agentic flow with its own memory, safety policy, and evals.
+labels: [lobe-request]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A lobe follows the template in ARCHITECTURE.md §5. The answers below become its Safety Policy and Eval Suite, so be specific.
+  - type: input
+    id: name
+    attributes:
+      label: Proposed name
+      description: Lowercase kebab-case, e.g. `release-notes-writer`.
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Purpose
+      description: What does the lobe do, for whom, and what does "good" look like?
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: External system
+      description: Which system does it work with? (e.g. Azure DevOps)
+    validations:
+      required: true
+  - type: textarea
+    id: reads
+    attributes:
+      label: What does it need to read?
+      placeholder: e.g. work items in area path X, wiki pages under Y
+    validations:
+      required: true
+  - type: textarea
+    id: writes
+    attributes:
+      label: What may it write?
+      description: Exact fields and operations. Leave empty for a read-only lobe.
+      placeholder: e.g. Description and Acceptance Criteria fields of work items
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: What must it never do?
+      placeholder: e.g. change State, assign, delete
+    validations:
+      required: true
+  - type: textarea
+    id: budgets
+    attributes:
+      label: Write budgets
+      description: Maximum writes per call, per session, and per time window.
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example inputs and expected outcomes
+      description: These seed the Eval Suite. Synthetic or anonymized data only.
+    validations:
+      required: true

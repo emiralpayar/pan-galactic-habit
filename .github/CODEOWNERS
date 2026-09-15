@@ -1,0 +1,26 @@
+# Code owners (https://docs.github.com/articles/about-code-owners).
+# The protect-main ruleset requires code owner approval.
+#
+# Replace individual owners with a GitHub team (e.g. @org/safety-reviewers) once one exists.
+# Later rules take precedence. Keep the safety-critical section in sync with
+# scripts/checks/safety-critical-paths.txt.
+
+# ── Default ─────────────────────────────────────────────────────────────
+*                               @emiralpayar @mgokcay
+
+# ── Safety-critical: system safety controls ─────────────────────────────
+/safety-layer/                  @emiralpayar @mgokcay
+/adapters/                      @emiralpayar @mgokcay
+/lobes/*/policy/                @emiralpayar @mgokcay
+
+# ── Safety-critical: repository protection and CI ───────────────────────
+/.github/CODEOWNERS             @emiralpayar @mgokcay
+/.github/rulesets/              @emiralpayar @mgokcay
+/.github/workflows/             @emiralpayar @mgokcay
+
+# ── Safety-critical: local guardrails and checks ────────────────────────
+/.githooks/                     @emiralpayar @mgokcay
+/.claude/settings.json          @emiralpayar @mgokcay
+/.claude/hooks/                 @emiralpayar @mgokcay
+/scripts/checks/                @emiralpayar @mgokcay
+/scripts/lib/                   @emiralpayar @mgokcay

@@ -1,0 +1,24 @@
+# Safety-critical paths (ARCHITECTURE.md §4.2, CONTRIBUTING.md#safety-critical-changes).
+#
+# One bash glob per line, relative to the repository root. `*` also matches `/`.
+# Changing this file is itself safety-critical.
+# Keep in sync with .github/CODEOWNERS.
+
+# System safety controls
+safety-layer/*
+adapters/*
+lobes/*/policy/*
+
+# Repository protection and CI
+.github/CODEOWNERS
+.github/rulesets/*
+.github/workflows/*
+
+# Local guardrails for humans and agents
+.githooks/*
+.claude/settings.json
+.claude/hooks/*
+
+# The checks themselves
+scripts/checks/*
+scripts/lib/*
