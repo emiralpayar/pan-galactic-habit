@@ -8,7 +8,7 @@ How humans and AI agents build pan-galactic-x together. The rules in [CONTRIBUTI
 |---|---|---|---|
 | **Developer** | Their own GitHub account | Author PRs, review and approve *others'* PRs, merge | Approve their own PRs |
 | **Claude Code session** (assisted) | The developer's git and GitHub identity | Branch, commit, push branches, open PRs | Commit to or push `main`, approve, merge, bypass hooks |
-| **Claude GitHub app** (`@claude`) | The Claude app's bot identity | When someone with write access mentions it: comment, push `claude/…` branches, link a PR for a human to open | Approve, merge, push `main`, run for users without write access |
+| **Claude GitHub app** (`@claude`) | The Claude app's bot identity | When a collaborator mentions it on an issue, or a PR's author on that PR: comment, push to a `claude/…` branch or that PR's branch | Approve, merge, push `main`, run repository code, run for anyone else |
 | **Autonomous agent** (Orchestrator, Improver, lobe) — *future* | A dedicated GitHub bot account | Push `agent/…` branches, open PRs | Approve, merge, write outside its scope |
 
 **Accountability stays human.** The developer running a session owns every PR it opens; the reviewer who approves an agent-authored PR owns that approval.
@@ -41,14 +41,15 @@ Each layer catches what the previous one missed. Instructions can be ignored and
 
 ## Claude on GitHub
 
-Mentioning `@claude` in an issue, PR comment, or review runs `.github/workflows/claude.yml`.
+Mentioning `@claude` runs `.github/workflows/claude.yml`.
 
-- **Who can trigger it.** Only the owner and collaborators with write access; the workflow and the action both check.
-- **What it reads.** The issue or PR, plus comments from the actors listed in `include_comments_by_actor`. Comments from anyone else are never passed to the model. Add new collaborators to that list in a PR.
-- **What it follows.** `CLAUDE.md` and `AGENTS.md` from the base branch, so a PR cannot change its instructions or its `.claude/` settings.
-- **What it produces.** Commits on a `claude/…` branch and a link to open a PR. The person who opens the PR is its author and cannot approve it; the usual checks, code owner review, and ruleset apply.
-- **Untrusted content.** The issue or PR body is passed to the model even when someone outside the project wrote it. Read it before you mention `@claude` on it.
-- **Changes to the workflow** are safety-critical, like every file in `.github/workflows/`.
+- **Who can trigger it.** The owner or a collaborator, in a new issue or an issue comment. On a pull request, only the PR's author: whoever directs Claude's pushes to a PR must not be the one who approves them.
+- **What it produces.** On an issue, commits on a `claude/…` branch and a link to open a PR. On a pull request, commits on that PR's branch. It cannot approve or merge; the usual checks, code owner review, and ruleset apply.
+- **Who opens the PR.** The person who mentioned `@claude` opens the PR from its link, so someone else approves it. Don't open a PR from a `claude/…` branch that another person requested.
+- **What it reads.** The issue or PR, and comments only from the actors listed in `include_comments_by_actor`. Add new collaborators to that list in a PR.
+- **What it cannot run.** Repository code (`make`, `scripts/`) is denied, because on a PR those files come from the PR's branch. Only `.claude/` and `CLAUDE.md` are restored from the base branch; `AGENTS.md`, which `CLAUDE.md` imports, is read from the checked-out branch.
+- **Untrusted content.** An issue or PR body reaches the model even when someone outside the project wrote it, and its author can edit it until the moment you mention `@claude`. Read it first.
+- **Changes to the workflow** are safety-critical, like every file in `.github/workflows/`. Never set `ACTIONS_STEP_DEBUG` on this repository: it makes the action print full tool output to public logs.
 
 ## Parallel sessions
 

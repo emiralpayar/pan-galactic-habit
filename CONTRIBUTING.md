@@ -345,7 +345,7 @@ AI-generated code is welcome and held to exactly the same standard as human code
 
 - **Claude Code sessions** run under the developer's own git and GitHub identity. The developer owns the PR and cannot approve it.
 - **Autonomous agents** (Orchestrator, Improver, lobes) use their **own** GitHub bot identities and branch names under `agent/…`. They can open PRs, never approve or merge.
-- **The Claude GitHub app** (`@claude` in issues and PRs) runs under its own bot identity when someone with write access mentions it. It pushes `claude/…` branches and links a PR for a human to open; it never approves or merges. See [agentic development](docs/development/agentic-development.md#claude-on-github).
+- **The Claude GitHub app** (`@claude`) runs under its own bot identity when a collaborator mentions it on an issue, or a PR's author mentions it on that PR. It pushes to a `claude/…` branch or to that PR's branch; it never approves or merges. See [agentic development](docs/development/agentic-development.md#claude-on-github).
 
 ### Expectations for AI agents
 
