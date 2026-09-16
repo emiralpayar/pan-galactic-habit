@@ -1,6 +1,6 @@
 # Deploy
 
-> **Status:** not started. The Dockerfile and deploy workflow arrive after the implementation language and hosting are decided (ARCHITECTURE.md §11).
+> **Status:** not started. The Dockerfile and deploy workflow arrive after hosting is decided (ARCHITECTURE.md §11). The image will need Python ([ADR 0003](../docs/adr/0003-use-python-as-the-implementation-language.md)) and both agent CLI runtimes, installed unmodified at build time with runtime downloads disabled ([ADR 0004](../docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 
 Builds the stateless container image and deploys it (ARCHITECTURE.md §4.4).
 

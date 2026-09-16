@@ -12,4 +12,4 @@ updates:
       github-actions:
         patterns: ["*"]
 
-  # Add an entry for the implementation language's package ecosystem once it is chosen (ARCHITECTURE.md §11).
+  # The first Python package adds a `uv` entry here (docs/adr/0003-use-python-as-the-implementation-language.md).
