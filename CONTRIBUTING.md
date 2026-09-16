@@ -359,7 +359,7 @@ See [AGENTS.md](AGENTS.md) and [docs/development/agentic-development.md](docs/de
 - **Markdown** is linted with markdownlint (`.markdownlint-cli2.jsonc`).
 - **Shell scripts** must pass `shellcheck`, start with `set -euo pipefail`, and remain compatible with bash 3.2 (macOS default).
 - **Python** ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)):
-  - Python 3.13 via uv, with a committed `uv.lock`.
+  - Python 3, with the exact version pinned in `.python-version` (3.13 at adoption), managed with uv and a committed `uv.lock`.
   - One uv workspace; each component is a member with its own `pyproject.toml` and a `src/` layout.
   - `ruff format` and `ruff check` for formatting and linting, `mypy --strict` for types, `pytest` for tests.
   - Pydantic models at trust boundaries: policy files, tool inputs, and data read from external systems.

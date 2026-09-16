@@ -21,12 +21,12 @@ The forces at play:
 
 ## Decision
 
-We will implement the system in **Python 3.13** with the following standards:
+We will implement the system in **Python 3**, starting with 3.13, with the following standards:
 
 | Concern | Standard |
 |---|---|
-| Interpreter and dependencies | uv. `.python-version` pins 3.13; a committed `uv.lock` pins every dependency exactly. |
-| Project layout | One uv workspace at the repository root. Each component (e.g. `safety-layer/core`, `adapters/azure-devops`) is a workspace member with its own `pyproject.toml` and a `src/` layout. Directories stay kebab-case; import packages use the snake_case equivalent. |
+| Interpreter and dependencies | uv. `.python-version` pins the exact Python version (3.13 at adoption); a committed `uv.lock` pins every dependency exactly. |
+| Project layout | One uv workspace at the repository root. Each component (e.g. `safety-layer/core`, `adapters/azure-devops`, `lobes/backlog-refiner/agent`) is a workspace member with its own `pyproject.toml` and a `src/` layout. A lobe's memory, policy, and evals stay data files outside the package. Directories stay kebab-case; import packages use the snake_case equivalent. |
 | Lint and format | ruff (`ruff check`, `ruff format`) |
 | Type checking | mypy `--strict` |
 | Tests | pytest |
@@ -50,6 +50,7 @@ That PR is safety-critical because it changes CI and the ruleset.
 - **TypeScript.** One runtime for the system and the MCP server, and both agent SDKs support it.
   Not chosen: the MCP server runs as a separate process either way, and Python gives us Pydantic for policy validation, import-linter for the boundary check, and a broader ecosystem for evals and the data analysis the Improver will need.
 - **Python 3.14.** Newer, with a longer support window.
-  Not chosen for now: 3.13 is the safer choice for dependency compatibility, and moving up later is a one-line change to `.python-version` in a normal PR.
+  Not chosen as the starting version: 3.13 is the safer choice for dependency compatibility.
+  Upgrading later stays within this decision: a normal PR changes `.python-version` and every other place the version appears (`requires-python`, tool target versions, the container base image).
 - **Go, .NET, Java, or Rust.** The GitHub Copilot SDK supports them.
   Not chosen: the Claude Agent SDK does not, which breaks the swappable-backend requirement.

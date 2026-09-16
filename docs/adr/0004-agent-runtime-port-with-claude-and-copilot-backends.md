@@ -9,7 +9,7 @@
 ARCHITECTURE.md §11 left the agent framework and the LLM provider open.
 Two requirements shape the answer:
 
-1. **Swappable backends.** Lobes must run on either Anthropic Claude or GitHub Copilot, chosen by configuration, without changes to lobe code, memory, or policy.
+1. **Swappable backends.** Lobes must run on either Anthropic Claude or GitHub Copilot, chosen by committed configuration, without changes to lobe code, memory, or policy.
 2. **A structural Tool Surface (§5.2).** The model must see only the lobe's allowlisted read tools and Safety Layer write tools — never an agent harness's built-in tools (shell, files, web) and never the raw tool list of an MCP server.
 
 What the options look like as of September 2026:
@@ -32,26 +32,29 @@ We will:
 
 - **Define an `AgentRuntime` port** in this repository.
   Lobe code runs a session through it by passing instructions (memory), the Tool Surface, and the conversation.
-  Lobe code never imports an agent SDK.
-- **Implement two backends** behind the port, selected by configuration:
+  The Orchestrator and Improver will use the same port; their tool sets are defined, under the same restrictions, when they are built (§12 steps 3–4).
+  Only the Agent Runtime imports an agent SDK. An import-linter contract enforces this and also keeps the Safety Layer from importing the Agent Runtime.
+- **Implement two backends** behind the port:
   - **Claude:** Claude Agent SDK with `tools=[]`, `setting_sources=[]`, `strict_mcp_config=True`, `permission_mode="dontAsk"`, and `allowed_tools` equal to the Tool Surface.
   - **Copilot:** GitHub Copilot SDK with `mode="empty"`, `available_tools` equal to the Tool Surface, and a permission handler that denies every request outside it.
 - **Define each tool once** as a typed Python function with a Pydantic input model; each backend registers the same definitions in its SDK's format.
 - **Keep MCP servers away from agent SDKs.** Adapters call MCP servers through the MCP Python client and expose only allowlisted operations as tools. No backend is given an MCP server configuration.
 - **Verify the Tool Surface, not our configuration.** A contract test starts each backend with its production configuration and asserts that the tools offered to the model equal the Tool Surface exactly. A backend whose effective tool list cannot be verified is not enabled.
-- **Pin both SDKs exactly.** An SDK upgrade is a PR that must pass the contract test.
-- **Keep models and credentials out of code.** Model names are configuration. The Claude backend uses an Anthropic API key; the Copilot backend uses a GitHub token for an account with a Copilot plan. Both come from the environment or a secret manager.
+  The contract test runs for both backends on every PR that changes the Agent Runtime or its SDK pins; a lobe's Eval Suite runs on the backend and model committed for that lobe.
+- **Pin both SDKs exactly** (`==`) in the Agent Runtime's `pyproject.toml`, so an SDK upgrade touches a safety-critical path and must pass the contract test.
+- **Commit the choice, not the secrets.** The backend and model for each lobe are committed configuration, so changing either is a reviewed PR that runs the Eval Suite (§3: a deploy is a commit).
+  Only credentials come from the environment or a secret manager: an Anthropic API key for the Claude backend (or a cloud provider's Claude endpoint once hosting is decided, §11), and for the Copilot backend a GitHub token used only for Copilot, separate from the identities that push branches or open PRs.
 - **Place the port and backends in a new top-level `agent-runtime/` component, classified safety-critical**, because a misconfigured backend bypasses the structural Tool Surface.
-  The PR that adds its code also adds it to `scripts/checks/safety-critical-paths.txt`, `.github/CODEOWNERS`, ARCHITECTURE.md §9, and the commit scopes.
+  The PR that adds its code also updates every file that lists safety-critical paths, commit scopes, or top-level components, including `scripts/checks/safety-critical-paths.txt`, `.github/CODEOWNERS`, `scripts/lib/conventions.sh`, ARCHITECTURE.md, AGENTS.md, CONTRIBUTING.md, and README.md.
 
 ## Consequences
 
-- Lobes, and later the Orchestrator and Improver, depend on one small interface; switching provider is a configuration change.
+- Lobes, and later the Orchestrator and Improver, depend on one small interface; switching a lobe's provider is a reviewed configuration change.
 - An SDK release that silently adds a tool fails CI instead of reaching a deployment.
 - We maintain two backends and their tests. Lobe code can use only features that the port exposes for both SDKs.
 - Both SDKs are young and ship bundled CLI binaries; expect frequent upgrade PRs, each safety-critical.
 - The container image must include both bundled CLIs, and the Copilot CLI must be shipped unmodified.
-- Running evals on both backends in CI needs credentials for both and incurs usage costs on both.
+- CI needs credentials for both backends, and both incur usage costs.
 - How each SDK exposes the effective tool list for the contract test is settled in the PR that implements the backend.
 
 ## Alternatives considered
