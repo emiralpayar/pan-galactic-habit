@@ -8,6 +8,7 @@ How humans and AI agents build pan-galactic-x together. The rules in [CONTRIBUTI
 |---|---|---|---|
 | **Developer** | Their own GitHub account | Author PRs, review and approve *others'* PRs, merge | Approve their own PRs |
 | **Claude Code session** (assisted) | The developer's git and GitHub identity | Branch, commit, push branches, open PRs | Commit to or push `main`, approve, merge, bypass hooks |
+| **Claude GitHub app** (`@claude`) | The Claude app's bot identity | When someone with write access mentions it: comment, push `claude/…` branches, link a PR for a human to open | Approve, merge, push `main`, run for users without write access |
 | **Autonomous agent** (Orchestrator, Improver, lobe) — *future* | A dedicated GitHub bot account | Push `agent/…` branches, open PRs | Approve, merge, write outside its scope |
 
 **Accountability stays human.** The developer running a session owns every PR it opens; the reviewer who approves an agent-authored PR owns that approval.
@@ -37,6 +38,17 @@ Each layer catches what the previous one missed. Instructions can be ignored and
    - `architecture-reviewer` for new components or changed interactions.
 7. **`/open-pr`** — pushes and opens a draft PR from the template.
 8. **You review the PR as if a colleague wrote it**, then request review from someone else.
+
+## Claude on GitHub
+
+Mentioning `@claude` in an issue, PR comment, or review runs `.github/workflows/claude.yml`.
+
+- **Who can trigger it.** Only the owner and collaborators with write access; the workflow and the action both check.
+- **What it reads.** The issue or PR, plus comments from the actors listed in `include_comments_by_actor`. Comments from anyone else are never passed to the model. Add new collaborators to that list in a PR.
+- **What it follows.** `CLAUDE.md` and `AGENTS.md` from the base branch, so a PR cannot change its instructions or its `.claude/` settings.
+- **What it produces.** Commits on a `claude/…` branch and a link to open a PR. The person who opens the PR is its author and cannot approve it; the usual checks, code owner review, and ruleset apply.
+- **Untrusted content.** The issue or PR body is passed to the model even when someone outside the project wrote it. Read it before you mention `@claude` on it.
+- **Changes to the workflow** are safety-critical, like every file in `.github/workflows/`.
 
 ## Parallel sessions
 
