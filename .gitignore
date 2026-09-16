@@ -26,7 +26,7 @@ CLAUDE.local.md
 .claude/worktrees/
 # Local eval runs and agent transcripts (never commit real data)
 .eval-results/
-lobes/*/evals/results/
+habits/*/evals/results/
 transcripts/
 *.transcript.json
 

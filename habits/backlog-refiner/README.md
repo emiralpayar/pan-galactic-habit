@@ -1,6 +1,6 @@
 # Backlog Refiner
 
-> **Status:** not started — Phase 1 (ARCHITECTURE.md §12). This lobe is built by hand and becomes the reference for the lobe template.
+> **Status:** not started — Phase 1 (ARCHITECTURE.md §12). This habit is built by hand and becomes the reference for the habit template.
 
 ## Purpose
 

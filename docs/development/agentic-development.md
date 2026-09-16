@@ -9,7 +9,7 @@ How humans and AI agents build pan-galactic-x together. The rules in [CONTRIBUTI
 | **Developer** | Their own GitHub account | Author PRs, review and approve *others'* PRs, merge | Approve their own PRs |
 | **Claude Code session** (assisted) | The developer's git and GitHub identity | Branch, commit, push branches, open PRs | Commit to or push `main`, approve, merge, bypass hooks |
 | **Claude GitHub app** (`@claude`) | The Claude app's bot identity | When a collaborator mentions it on an issue, or a PR's author on that PR: comment, push to a `claude/…` branch or that PR's branch | Approve, merge, push `main`, run repository code, run for anyone else |
-| **Autonomous agent** (Orchestrator, Improver, lobe) — *future* | A dedicated GitHub bot account | Push `agent/…` branches, open PRs | Approve, merge, write outside its scope |
+| **Autonomous agent** (Orchestrator, Improver, habit) — *future* | A dedicated GitHub bot account | Push `agent/…` branches, open PRs | Approve, merge, write outside its scope |
 
 **Accountability stays human.** The developer running a session owns every PR it opens; the reviewer who approves an agent-authored PR owns that approval.
 

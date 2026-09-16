@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Instructions for AI agents working on this repository: Claude Code sessions, other coding assistants, and — once they exist — the system's own Orchestrator, Improver, and lobes.
+Instructions for AI agents working on this repository: Claude Code sessions, other coding assistants, and — once they exist — the system's own Orchestrator, Improver, and habits.
 
 Humans are welcome to read this too; it is the short version of [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -33,7 +33,7 @@ These are non-negotiable. Local hooks, Claude Code hooks, CI, and GitHub ruleset
    `git switch main && git pull --ff-only && git switch -c <type>/<issue>-<short-description>`
 3. **Make the smallest change that solves the issue.** One concern per PR. Do not refactor unrelated code.
 4. **Keep docs in sync in the same PR:** ARCHITECTURE.md for architectural changes, the component README for responsibility changes, an ADR for decisions.
-5. **Verify:** run `make check`. For lobe behavior or memory changes, add or update evals (once the eval harness exists).
+5. **Verify:** run `make check`. For habit behavior or memory changes, add or update evals (once the eval harness exists).
 6. **Commit** using Conventional Commits (below).
 7. **Push and open a PR** using the template. The PR title must be a valid Conventional Commit header — it becomes the squash commit on `main`.
 8. **Stop.** Report the PR link. A human reviews and merges.
@@ -61,7 +61,7 @@ docs: add adr for trunk-based development
 ```
 
 - Types: `feat` `fix` `docs` `refactor` `perf` `test` `build` `ci` `chore` `revert`
-- Scopes (optional): `repo` `dev` `ci` `deps` `docs` `safety-layer` `adapters` `orchestrator` `improver` `chat` `deploy` `evals`, or any lobe or adapter directory name
+- Scopes (optional): `repo` `dev` `ci` `deps` `docs` `safety-layer` `adapters` `orchestrator` `improver` `chat` `deploy` `evals`, or any habit or adapter directory name
 - Subject: imperative, lowercase first letter, no trailing period, header ≤ 72 characters
 
 **Attribution.** AI-assisted commits end with a `Co-Authored-By:` trailer naming the model. Do not remove attribution trailers.
@@ -79,10 +79,10 @@ scripts/checks/safety-guard.sh --base origin/main
 
 | Path | What lives there | Safety-critical |
 |---|---|---|
-| `lobes/<name>/agent/` | Agent definition and flow code | |
-| `lobes/<name>/memory/` | Instructions and skills (`.md`) | |
-| `lobes/<name>/policy/` | Safety Policy for the lobe | ✅ |
-| `lobes/<name>/evals/` | Fixtures and expected qualities | |
+| `habits/<name>/agent/` | Agent definition and flow code | |
+| `habits/<name>/memory/` | Instructions and skills (`.md`) | |
+| `habits/<name>/policy/` | Safety Policy for the habit | ✅ |
+| `habits/<name>/evals/` | Fixtures and expected qualities | |
 | `adapters/` | System-specific integrations, request allowlists | ✅ |
 | `safety-layer/` | Deterministic write-gating engine | ✅ |
 | `orchestrator/`, `improver/` | Meta-agents that open PRs | |
@@ -92,4 +92,4 @@ scripts/checks/safety-guard.sh --base origin/main
 
 ## Current phase
 
-Pre-implementation. Next up is Phase 1: build the Backlog Refiner by hand (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Nothing in `lobes/`, `adapters/`, `safety-layer/`, `orchestrator/`, `improver/`, or `interface/` is implemented yet — those folders contain only READMEs and placeholders.
+Pre-implementation. Next up is Phase 1: build the Backlog Refiner by hand (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Nothing in `habits/`, `adapters/`, `safety-layer/`, `orchestrator/`, `improver/`, or `interface/` is implemented yet — those folders contain only READMEs and placeholders.

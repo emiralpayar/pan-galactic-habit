@@ -11,7 +11,7 @@ CONVENTIONAL_TYPES="feat fix docs refactor perf test build ci chore revert"
 FIXED_SCOPES="repo dev ci deps docs safety-layer adapters orchestrator improver chat evals deploy"
 
 # Autonomous agents that may author branches under agent/<agent>/...
-AGENT_NAME_REGEX='(orchestrator|improver|lobe-[a-z0-9]+(-[a-z0-9]+)*)'
+AGENT_NAME_REGEX='(orchestrator|improver|habit-[a-z0-9]+(-[a-z0-9]+)*)'
 
 SLUG_REGEX='[a-z0-9]+(-[a-z0-9]+)*'
 
@@ -29,12 +29,12 @@ types_regex() {
   echo "$CONVENTIONAL_TYPES" | tr ' ' '|'
 }
 
-# Fixed scopes plus every lobe and adapter directory name, one per line.
+# Fixed scopes plus every habit and adapter directory name, one per line.
 allowed_scopes() {
   local root dir
   root="$(repo_root)"
   echo "$FIXED_SCOPES" | tr ' ' '\n'
-  for dir in "$root"/lobes/*/ "$root"/adapters/*/; do
+  for dir in "$root"/habits/*/ "$root"/adapters/*/; do
     [ -d "$dir" ] && basename "$dir"
   done
 }

@@ -30,7 +30,7 @@ body:
     attributes:
       label: Component
       options:
-        - A lobe (name it below)
+        - A habit (name it below)
         - Safety Layer
         - Adapter
         - Orchestrator
@@ -56,4 +56,4 @@ body:
     id: context
     attributes:
       label: Additional context
-      description: Lobe name, commit SHA of the deployment, logs (redacted), screenshots.
+      description: Habit name, commit SHA of the deployment, logs (redacted), screenshots.

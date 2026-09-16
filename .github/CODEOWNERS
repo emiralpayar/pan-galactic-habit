@@ -11,7 +11,7 @@
 # ── Safety-critical: system safety controls ─────────────────────────────
 /safety-layer/                  @emiralpayar @mgokcay
 /adapters/                      @emiralpayar @mgokcay
-/lobes/*/policy/                @emiralpayar @mgokcay
+/habits/*/policy/               @emiralpayar @mgokcay
 
 # ── Safety-critical: repository protection and CI ───────────────────────
 /.github/CODEOWNERS             @emiralpayar @mgokcay

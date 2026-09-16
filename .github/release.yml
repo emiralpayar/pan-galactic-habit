@@ -5,7 +5,7 @@ changelog:
   categories:
     - title: ⚠️ Safety-critical changes
       labels: [safety-critical]
-    - title: 🧠 Lobe memory
+    - title: 🧠 Habit memory
       labels: [memory]
     - title: ⚙️ Behavior
       labels: [behavior]

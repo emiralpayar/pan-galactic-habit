@@ -7,7 +7,7 @@
 # System safety controls
 safety-layer/*
 adapters/*
-lobes/*/policy/*
+habits/*/policy/*
 
 # Repository protection and CI
 .github/CODEOWNERS

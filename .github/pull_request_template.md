@@ -8,7 +8,7 @@ Closes #
 
 ## Type of change
 
-- [ ] Memory (`lobes/*/memory/`)
+- [ ] Memory (`habits/*/memory/`)
 - [ ] Behavior (agent, orchestrator, improver, or interface code)
 - [ ] Safety-critical (see CONTRIBUTING.md#safety-critical-changes)
 - [ ] Documentation, tooling, or CI

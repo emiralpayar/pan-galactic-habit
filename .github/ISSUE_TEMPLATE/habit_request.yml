@@ -1,11 +1,11 @@
-name: Lobe request
-description: Request a new lobe — an agentic flow with its own memory, safety policy, and evals.
-labels: [lobe-request]
+name: Habit request
+description: Request a new habit — an agentic flow with its own memory, safety policy, and evals.
+labels: [habit-request]
 body:
   - type: markdown
     attributes:
       value: |
-        A lobe follows the template in ARCHITECTURE.md §5. The answers below become its Safety Policy and Eval Suite, so be specific.
+        A habit follows the template in ARCHITECTURE.md §5. The answers below become its Safety Policy and Eval Suite, so be specific.
   - type: input
     id: name
     attributes:
@@ -17,7 +17,7 @@ body:
     id: purpose
     attributes:
       label: Purpose
-      description: What does the lobe do, for whom, and what does "good" look like?
+      description: What does the habit do, for whom, and what does "good" look like?
     validations:
       required: true
   - type: input
@@ -38,7 +38,7 @@ body:
     id: writes
     attributes:
       label: What may it write?
-      description: Exact fields and operations. Leave empty for a read-only lobe.
+      description: Exact fields and operations. Leave empty for a read-only habit.
       placeholder: e.g. Description and Acceptance Criteria fields of work items
   - type: textarea
     id: forbidden

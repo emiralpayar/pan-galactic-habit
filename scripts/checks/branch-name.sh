@@ -58,7 +58,7 @@ cat >&2 <<EOF
     agent/<agent>/<type>/<issue>-<description>      agent/improver/fix/40-tighten-dor-rules
 
   <type>:   ${CONVENTIONAL_TYPES}
-  <agent>:  orchestrator | improver | lobe-<lobe-name>
+  <agent>:  orchestrator | improver | habit-<habit-name>
   Lowercase kebab-case only (a-z, 0-9, -).
 
   Rename with: git branch -m <new-name>

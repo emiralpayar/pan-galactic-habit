@@ -2,7 +2,7 @@
 
 > **Safety-critical.** Every change under `adapters/` requires a `Safety-Impact` declaration and code owner approval.
 
-An adapter is the system-specific integration layer between lobes and one external system (ARCHITECTURE.md §2, §5.2). Adapters are shared by all lobes that use the same system.
+An adapter is the system-specific integration layer between habits and one external system (ARCHITECTURE.md §2, §5.2). Adapters are shared by all habits that use the same system.
 
 ## Responsibilities
 
@@ -15,7 +15,7 @@ An adapter is the system-specific integration layer between lobes and one extern
 ## Rules for changes
 
 - A new write operation or MCP tool classified as `write`, or any reclassification from `write` to `read`, is `Safety-Impact: loosens`.
-- Adapter code must not contain lobe-specific rules; those belong in the lobe's policy.
+- Adapter code must not contain habit-specific rules; those belong in the habit's policy.
 - Credentials are least-privilege and come from the environment or a secret manager — never from code or config in git.
 - Tests must cover the allowlist: a request outside it (method, path template, query parameters, `api-version`) or an unknown MCP tool must be rejected.
 

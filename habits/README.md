@@ -1,13 +1,13 @@
-# Lobes
+# Habits
 
-A lobe is an independent agentic flow with one purpose, its own memory, its own Safety Policy, and its own evals (ARCHITECTURE.md §2, §5).
+A habit is an independent agentic flow with one purpose, its own memory, its own Safety Policy, and its own evals (ARCHITECTURE.md §2, §5).
 
 ## Structure
 
-Every lobe follows this layout:
+Every habit follows this layout:
 
 ```text
-lobes/<name>/
+habits/<name>/
   README.md               # purpose, external system, reads, writes, status
   agent/                  # agent definition and flow code
   memory/
@@ -23,15 +23,15 @@ lobes/<name>/
 ## Rules for changes
 
 - The directory name is lowercase kebab-case and is automatically a valid commit scope.
-- **Memory is read-only at runtime.** Changes to memory are PRs, committed as `feat(<lobe>)` or `fix(<lobe>)`.
+- **Memory is read-only at runtime.** Changes to memory are PRs, committed as `feat(<habit>)` or `fix(<habit>)`.
 - **`policy/` is safety-critical.** Any change needs `Safety-Impact` and code owner approval. The policy is deny-by-default.
-- **Memory cannot grant permissions** — only the policy defines what a lobe may write.
+- **Memory cannot grant permissions** — only the policy defines what a habit may write.
 - Behavior and memory changes add or update eval cases.
 - Eval fixtures are synthetic or fully anonymized.
 - Agent code never calls adapter write functions directly; writes go through the Safety Layer.
 
-## Lobes
+## Habits
 
-| Lobe | Purpose | External system | Status |
+| Habit | Purpose | External system | Status |
 |---|---|---|---|
 | [backlog-refiner](backlog-refiner/) | Refine backlog items against a Definition of Ready | Azure DevOps | Not started (Phase 1) |
