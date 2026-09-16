@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 # pan-galactic-x .gitignore
 # Language sections cover Python (docs/adr/0003-use-python-as-the-implementation-language.md)
-# and Node.js, which runs the Azure DevOps MCP server and markdownlint.
+# and Node.js, which runs markdownlint.
 # ─────────────────────────────────────────────────────────────────────────
 
 # ── Secrets and local configuration ──────────────────────────────────────

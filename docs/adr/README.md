@@ -34,3 +34,4 @@ Easily reversible choices local to one component don't need an ADR; a good PR de
 | [0002](0002-trunk-based-development-with-protected-main.md) | Trunk-based development with a protected main | Accepted |
 | [0003](0003-use-python-as-the-implementation-language.md) | Use Python as the implementation language | Accepted |
 | [0004](0004-agent-runtime-port-with-claude-and-copilot-backends.md) | Agent runtime port with Claude and Copilot backends | Accepted |
+| [0005](0005-azure-devops-adapter-calls-the-rest-api-directly.md) | Azure DevOps adapter calls the REST API directly | Accepted |

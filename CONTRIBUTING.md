@@ -38,7 +38,7 @@ This document defines how every change reaches `main` — whether it is written 
 
 ## Development setup
 
-Prerequisites: `git`, `bash`, `make`, and the [GitHub CLI](https://cli.github.com/) (`gh`). Recommended: `shellcheck` and Node.js (for `npx markdownlint-cli2`). For Python work, also install [uv](https://docs.astral.sh/uv/), which provides the pinned Python version, and Node.js 20 or later, which the Azure DevOps MCP server needs ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)).
+Prerequisites: `git`, `bash`, `make`, and the [GitHub CLI](https://cli.github.com/) (`gh`). Recommended: `shellcheck` and Node.js (for `npx markdownlint-cli2`). For Python work, also install [uv](https://docs.astral.sh/uv/), which provides the pinned Python version ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)).
 
 ```bash
 make setup   # points git at .githooks/, sets the commit template, enables fetch pruning
@@ -290,7 +290,7 @@ These paths control what the system can do to external systems, or control the g
 | Path | Why |
 |---|---|
 | `safety-layer/` | The write-gating engine |
-| `adapters/` | Tool classification and pinned MCP server versions |
+| `adapters/` | Operation classification and pinned API and MCP server versions |
 | `lobes/*/policy/` | What each lobe may write |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI checks and repository protection |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/` | Local guardrails for humans and agents |
@@ -381,7 +381,7 @@ See [AGENTS.md](AGENTS.md) and [docs/development/agentic-development.md](docs/de
 
 ## Dependencies
 
-- Pin versions exactly (lock files, pinned MCP server versions, pinned GitHub Actions major versions).
+- Pin versions exactly (lock files, pinned API and MCP server versions, pinned GitHub Actions major versions).
 - A new dependency needs a one-line justification in the PR description: what it does and why we can't reasonably do without it.
 - Dependabot opens update PRs weekly; they go through the same review.
 - **Dependabot PR titles are checked like any other PR title**, except for the length limit. Dependabot sometimes capitalizes the subject (`ci(deps): Bump …`); when the PR title check fails, edit the title to lowercase (`ci(deps): bump …`) before merging, and re-check it right before merging because Dependabot may rewrite it when it updates the PR. Its individual commit messages are not checked, since they are squashed away.

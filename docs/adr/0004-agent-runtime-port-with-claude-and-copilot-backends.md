@@ -40,7 +40,7 @@ We will:
   - **Claude:** Claude Agent SDK with `tools=[]`, `setting_sources=[]`, `strict_mcp_config=True`, `permission_mode="dontAsk"`, and `allowed_tools` equal to the Tool Surface.
   - **Copilot:** GitHub Copilot SDK with `mode="empty"`, `available_tools` equal to the Tool Surface, and a permission handler that denies every request outside it.
 - **Define each tool once** as a typed Python function with a Pydantic input model; each backend registers the same definitions in its SDK's format.
-- **Keep MCP servers away from agent SDKs.** Adapters call MCP servers through the MCP Python client and expose only allowlisted operations as tools. No backend is given an MCP server configuration.
+- **Keep MCP servers away from agent SDKs.** An adapter that uses an MCP server calls it through the MCP Python client and exposes only allowlisted operations as tools; the Azure DevOps adapter calls its REST API directly ([ADR 0005](0005-azure-devops-adapter-calls-the-rest-api-directly.md)). No backend is given an MCP server configuration.
 - **Verify the Tool Surface, not our configuration.** A contract test starts each backend with its production configuration and asserts that the tools offered to the model equal the Tool Surface exactly. A backend whose effective tool list cannot be verified is not enabled.
   The contract test runs for both backends on every PR that changes the Agent Runtime or its SDK pins; a lobe's Eval Suite runs on the backend and model committed for that lobe.
 - **Pin both SDKs exactly** (`==`) in the Agent Runtime's `pyproject.toml`, so an SDK upgrade touches a safety-critical path and must pass the contract test.

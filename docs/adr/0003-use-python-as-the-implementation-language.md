@@ -13,8 +13,6 @@ The forces at play:
 
 - Lobes must run on either the Claude Agent SDK or the GitHub Copilot SDK ([ADR 0004](0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
   The Claude Agent SDK exists only for Python and TypeScript; the Copilot SDK exists for both of those and several other languages.
-- The Azure DevOps MCP server is a Node.js program that runs as a separate process over stdio.
-  It needs Node.js 20 or later at runtime whatever language the client is written in.
 - The Safety Layer must validate declarative policy files and write payloads deterministically, and prove its invariants with tests (`safety-layer/README.md`).
 - The boundary check in §4.2 must fail CI when lobe code imports adapter write internals, which needs import-level enforcement.
 - Many authors are AI agents, so standards must be enforced by tools rather than by convention.
@@ -41,14 +39,13 @@ That PR is safety-critical because it changes CI and the ruleset.
 - Phase 1 can start.
 - Both agent backends chosen in ADR 0004 have first-party Python SDKs.
 - The §4.2 boundary check becomes implementable with an existing tool instead of custom scripts.
-- Development environments and the container image need two runtimes: Python for the system and Node.js for the Azure DevOps MCP server.
 - Python types are not enforced at runtime; mypy `--strict` in CI and Pydantic at trust boundaries compensate.
 - Adding CI jobs later means updating the ruleset's required checks in the same PR (ADR 0002).
 
 ## Alternatives considered
 
-- **TypeScript.** One runtime for the system and the MCP server, and both agent SDKs support it.
-  Not chosen: the MCP server runs as a separate process either way, and Python gives us Pydantic for policy validation, import-linter for the boundary check, and a broader ecosystem for evals and the data analysis the Improver will need.
+- **TypeScript.** Both agent SDKs support it, and Microsoft maintains an official Azure DevOps client for Node.js.
+  Not chosen: the Azure DevOps adapter needs only a few REST calls ([ADR 0005](0005-azure-devops-adapter-calls-the-rest-api-directly.md)), and Python gives us Pydantic for policy validation, import-linter for the boundary check, and a broader ecosystem for evals and the data analysis the Improver will need.
 - **Python 3.14.** Newer, with a longer support window.
   Not chosen as the starting version: 3.13 is the safer choice for dependency compatibility.
   Upgrading later stays within this decision: a normal PR changes `.python-version` and every other place the version appears (`requires-python`, tool target versions, the container base image).
