@@ -47,7 +47,7 @@ Mentioning `@claude` runs `.github/workflows/claude.yml`.
 - **What it produces.** On an issue, commits on a `claude/…` branch and a link to open a PR. On a pull request, commits on that PR's branch. It cannot approve or merge; the usual checks, code owner review, and ruleset apply.
 - **Who opens the PR.** The person who mentioned `@claude` opens the PR from its link, so someone else approves it. Don't open a PR from a `claude/…` branch that another person requested.
 - **What it reads.** The issue or PR, and comments only from the actors listed in `include_comments_by_actor`. Add new collaborators to that list in a PR.
-- **What it cannot run.** Repository code (`make`, `scripts/`) is denied, because on a PR those files come from the PR's branch. Only `.claude/` and `CLAUDE.md` are restored from the base branch; `AGENTS.md`, which `CLAUDE.md` imports, is read from the checked-out branch.
+- **What it cannot run.** Tool rules deny repository code (`make`, `scripts/`), git commands that can run code or print credentials, and access to `.git/`, because on a PR those files come from the PR's branch. The action restores only Claude's own configuration (such as `.claude/`, `CLAUDE.md`, and `.mcp.json`) from the base branch; `AGENTS.md`, which `CLAUDE.md` imports, is read from the checked-out branch. These rules reduce the risk; they are not a sandbox.
 - **Untrusted content.** An issue or PR body reaches the model even when someone outside the project wrote it, and its author can edit it until the moment you mention `@claude`. Read it first.
 - **Changes to the workflow** are safety-critical, like every file in `.github/workflows/`. Never set `ACTIONS_STEP_DEBUG` on this repository: it makes the action print full tool output to public logs.
 
