@@ -3,12 +3,12 @@
 
 memory:
   - changed-files:
-      - any-glob-to-any-file: "lobes/*/memory/**"
+      - any-glob-to-any-file: "habits/*/memory/**"
 
 behavior:
   - changed-files:
       - any-glob-to-any-file:
-          - "lobes/*/agent/**"
+          - "habits/*/agent/**"
           - "orchestrator/**"
           - "improver/**"
           - "interface/**"

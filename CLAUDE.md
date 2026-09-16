@@ -9,7 +9,7 @@
   - `start-work` — create a correctly named branch from an issue.
   - `open-pr` — run checks, push, and open a PR that follows the template.
   - `new-adr` — record an architecture decision.
-  - `new-lobe` — scaffold a lobe following ARCHITECTURE.md §5.
+  - `new-habit` — scaffold a habit following ARCHITECTURE.md §5.
 - **Subagents** (in `.claude/agents/`):
   - `safety-reviewer` — review any change that touches a safety-critical path before opening the PR.
   - `architecture-reviewer` — check a change against ARCHITECTURE.md principles.

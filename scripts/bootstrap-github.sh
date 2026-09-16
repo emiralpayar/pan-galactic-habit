@@ -72,7 +72,7 @@ label() {
   run gh label create "$1" --repo "$repo" --color "$2" --description "$3" --force
 }
 label "safety-critical"    "b60205" "Touches a safety-critical path; code owner review required"
-label "memory"             "0e8a16" "Changes lobe memory"
+label "memory"             "0e8a16" "Changes habit memory"
 label "behavior"           "1d76db" "Changes agent, orchestrator, improver, or interface code"
 label "docs"               "0075ca" "Documentation"
 label "dev-tooling"        "5319e7" "Developer and agent tooling"
@@ -80,11 +80,11 @@ label "ci"                 "fbca04" "CI workflows"
 label "dependencies"       "0366d6" "Dependency updates"
 label "bug"                "d73a4a" "Something is not working"
 label "enhancement"        "a2eeef" "New capability or improvement"
-label "lobe-request"       "c5def5" "Request for a new lobe"
+label "habit-request"      "c5def5" "Request for a new habit"
 label "needs-adr"          "e99695" "A decision must be recorded in an ADR before merging"
 label "agent:orchestrator" "bfdadc" "Authored by the Orchestrator Agent"
 label "agent:improver"     "bfdadc" "Authored by the Improver Agent"
-label "agent:lobe"         "bfdadc" "Proposed by a running lobe"
+label "agent:habit"        "bfdadc" "Proposed by a running habit"
 ok "Labels upserted${note}"
 
 # ── Ruleset ───────────────────────────────────────────────────────────────

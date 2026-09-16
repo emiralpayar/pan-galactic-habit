@@ -18,7 +18,7 @@ You can expect an acknowledgement within two business days.
 
 In addition to the usual classes (secret exposure, injection, privilege escalation), the following are security issues in this project:
 
-- Any way for a lobe to **write to an external system without passing through the Safety Layer**, or to write something its Safety Policy does not allow.
+- Any way for a habit to **write to an external system without passing through the Safety Layer**, or to write something its Safety Policy does not allow.
 - Any way for **content read from an external system** (prompt injection) to cause writes beyond what the user confirmed.
 - Any way for an agent to **approve or merge a pull request**, or to change `main` without review.
 - A Safety Layer path that **fails open**.

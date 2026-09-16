@@ -2,7 +2,7 @@
 
 > **Status:** not started — Phase 4 (ARCHITECTURE.md §12). Built last, once real operational data exists.
 
-Analyzes signals from the Operational Store and eval results, and opens improvement PRs for existing lobes (ARCHITECTURE.md §2, §10.4).
+Analyzes signals from the Operational Store and eval results, and opens improvement PRs for existing habits (ARCHITECTURE.md §2, §10.4).
 
 ## Boundaries
 
