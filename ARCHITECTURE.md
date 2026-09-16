@@ -31,6 +31,7 @@ Three defining properties:
 | **Safety Policy** | A small declarative file inside a lobe's folder that configures the Safety Layer engine for that lobe (field allowlist, forbidden operations, write budgets). |
 | **Adapter** | A system-specific, extendable integration layer (e.g. the Azure DevOps adapter). Classifies every external tool as read or write. Adding a new system means writing a new adapter. |
 | **Tool Surface** | The exact set of tools a lobe's agent is given: allowlisted read tools from the adapter plus write tools exposed only through the Safety Layer. Never the raw tool list of an external system or MCP server. |
+| **Agent Runtime** | The port through which every agent session runs on a model backend (v1: the Claude Agent SDK or the GitHub Copilot SDK, chosen by configuration). Each backend is restricted so the model is offered exactly the Tool Surface. See [ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md). |
 | **Write Confirmation** | The runtime step in which the user sees a diff preview of a proposed write and explicitly approves it before it is executed. |
 | **Operational Store** | A non-authoritative store for runtime data: chat sessions, write audit records, user feedback, budget counters. Read by the Improver; never changes behavior directly. |
 | **Eval Suite** | A per-lobe set of fixture inputs and expected qualities, run in CI on every PR so reviewers can compare behavior before and after a change. |
@@ -156,7 +157,7 @@ flowchart TD
 
 ### 5.2 Safety Layer enforcement
 
-- **Structural tool surface.** The agent is handed only the Tool Surface: allowlisted read tools and Safety Layer write tools. It never receives the raw tool list of an MCP server or a direct client to an external API.
+- **Structural tool surface.** The agent is handed only the Tool Surface: allowlisted read tools and Safety Layer write tools. It never receives the raw tool list of an MCP server, a direct client to an external API, or an agent harness's built-in tools; the Agent Runtime enforces this for every backend and a contract test verifies it ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 - **Deny by default.** The adapter explicitly classifies every tool of the external system as `read` or `write`. Unclassified tools are unavailable. The MCP server version is pinned; upgrading it is a safety-critical PR that shows the tool surface diff, because a new version can silently add write tools.
 - **Payload-level policy checks.** The engine validates the actual write payload (e.g. each JSON Patch operation and target field), not just the tool name.
 - **Budgets.** Writes are capped at three levels: per call, per session, and per time window. Per-session counters may live in process memory; per-time-window counters live in the Operational Store. If the Operational Store is unavailable, writes **fail closed**.
@@ -273,7 +274,7 @@ AGENTS.md, CLAUDE.md        # instructions for AI agents working on the reposito
 CONTRIBUTING.md             # development conventions
 ```
 
-The boundary check described in §4.2 is planned; it will be implemented once the implementation language is chosen.
+The boundary check described in §4.2 is planned; it will be implemented with import-linter ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)).
 
 > Memory stays plain markdown. Safety policies are small declarative files because the deterministic engine must parse them; they should stay short enough to review as a plain diff.
 
@@ -293,20 +294,19 @@ The boundary check described in §4.2 is planned; it will be implemented once th
 5. **Meaning of "stateless".** Git is the only source of truth for behavior and memory; operational data lives in a non-authoritative store (§7).
 6. **Deploy model.** Repository contents are baked into the image; a deploy is a commit SHA (§4.4).
 7. **Runtime writes.** Every write requires user Write Confirmation after a diff preview (§5.2).
+8. **Implementation language.** Python 3.13, managed with uv and checked with ruff, mypy `--strict`, pytest, and import-linter ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)).
+9. **Agent framework and LLM provider.** Agents run through the Agent Runtime port with two configurable backends, the Claude Agent SDK and the GitHub Copilot SDK, each restricted to the Tool Surface ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 
 ---
 
 ## 11. Open Questions
 
-1. **Language and runtime** for the lobes, Safety Layer, and adapters.
-2. **Agent framework** for the single agent loop, the Orchestrator, and the Improver.
-3. **LLM provider and models.**
-4. **Hosting**, and the technology for the Operational Store and secret manager.
-5. **User authentication** for the Chat Interface.
-6. **Write identity in external systems.** Do writes happen under a shared service account or on behalf of the confirming user? This affects the external system's audit history and credential scoping.
-7. **Budget values** for the Backlog Refiner (per call, per session, per time window).
-8. **Improver cadence and thresholds.**
-9. **Retention policy** for transcripts and audit records.
+1. **Hosting**, and the technology for the Operational Store and secret manager.
+2. **User authentication** for the Chat Interface.
+3. **Write identity in external systems.** Do writes happen under a shared service account or on behalf of the confirming user? This affects the external system's audit history and credential scoping.
+4. **Budget values** for the Backlog Refiner (per call, per session, per time window).
+5. **Improver cadence and thresholds.**
+6. **Retention policy** for transcripts and audit records.
 
 ---
 

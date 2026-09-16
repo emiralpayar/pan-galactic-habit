@@ -38,7 +38,7 @@ This document defines how every change reaches `main` — whether it is written 
 
 ## Development setup
 
-Prerequisites: `git`, `bash`, `make`, and the [GitHub CLI](https://cli.github.com/) (`gh`). Recommended: `shellcheck` and Node.js (for `npx markdownlint-cli2`). Language toolchains will be added once the implementation language is decided (ARCHITECTURE.md §11).
+Prerequisites: `git`, `bash`, `make`, and the [GitHub CLI](https://cli.github.com/) (`gh`). Recommended: `shellcheck` and Node.js (for `npx markdownlint-cli2`). For Python work, also install [uv](https://docs.astral.sh/uv/), which provides the pinned Python version, and Node.js 20 or later, which the Azure DevOps MCP server needs ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)).
 
 ```bash
 make setup   # points git at .githooks/, sets the commit template, enables fetch pruning
@@ -358,7 +358,13 @@ See [AGENTS.md](AGENTS.md) and [docs/development/agentic-development.md](docs/de
 - **File and directory names:** lowercase kebab-case (`safety-policy.yaml`, `backlog-refiner/`), unless a language convention requires otherwise.
 - **Markdown** is linted with markdownlint (`.markdownlint-cli2.jsonc`).
 - **Shell scripts** must pass `shellcheck`, start with `set -euo pipefail`, and remain compatible with bash 3.2 (macOS default).
-- **Language-specific standards** (formatter, linter, test framework, project layout) will be defined in the ADR that chooses the implementation language, and enforced in CI from that point on.
+- **Python** ([ADR 0003](docs/adr/0003-use-python-as-the-implementation-language.md)):
+  - Python 3.13 via uv, with a committed `uv.lock`.
+  - One uv workspace; each component is a member with its own `pyproject.toml` and a `src/` layout.
+  - `ruff format` and `ruff check` for formatting and linting, `mypy --strict` for types, `pytest` for tests.
+  - Pydantic models at trust boundaries: policy files, tool inputs, and data read from external systems.
+  - import-linter contracts enforce the boundary check (ARCHITECTURE.md §4.2).
+  - CI enforces these from the PR that adds the first Python code.
 - **Tests:** new behavior comes with tests. Bug fixes come with a test that fails without the fix.
 - **Comments** explain *why*, not *what*.
 
