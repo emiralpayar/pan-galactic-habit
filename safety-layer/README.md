@@ -7,7 +7,7 @@ The deterministic (non-LLM) engine that gates every write to an external system 
 ## Responsibilities
 
 - Load and validate a lobe's Safety Policy.
-- Validate each proposed write **by its payload** (fields, operations), not by tool name.
+- Validate each proposed write **as the complete request** the adapter built (target, parameters, and every payload operation and field), not by tool name. Non-mutating preconditions (e.g. a JSON Patch `test`) are allowed; operations that copy from another path (e.g. `move`, `copy`) are rejected.
 - Enforce budgets per call, per session, and per time window.
 - Produce the diff preview for Write Confirmation, and re-validate at execution time.
 - Execute approved writes through the adapter.
