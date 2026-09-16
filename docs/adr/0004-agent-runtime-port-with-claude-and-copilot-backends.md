@@ -16,7 +16,9 @@ What the options look like as of September 2026:
 
 - **Claude Agent SDK** (`claude-agent-sdk`, Python, 0.x) drives a bundled Claude Code CLI process with in-process custom tools.
   `tools=[]` disables every built-in tool, `setting_sources=[]` and `strict_mcp_config=True` ignore settings files and outside MCP configuration, and `permission_mode="dontAsk"` denies any tool that is not pre-approved.
-  It requires an Anthropic API key or a cloud provider account; consumer subscription logins are not permitted for this use.
+  It authenticates with a Claude subscription token from `claude setup-token` (`CLAUDE_CODE_OAUTH_TOKEN`), an Anthropic API key, or a cloud provider account.
+  Anthropic's help center (updated 2026-06-16) states that Agent SDK usage draws from the subscription's usage limits and that plan usage is per user.
+  An earlier Anthropic legal notice (February 2026) said subscription tokens were not permitted in the Agent SDK, and a plan to meter programmatic usage separately at API rates is paused, not cancelled.
 - **GitHub Copilot SDK** (`github-copilot-sdk`, Python, generally available since June 2026) drives a bundled Copilot CLI over JSON-RPC.
   `mode="empty"` refuses to start a session without `available_tools`, an allowlist over built-in, MCP, and custom tools.
   It authenticates with a GitHub token, bills usage to a Copilot plan, and also offers Claude models.
@@ -43,7 +45,12 @@ We will:
   The contract test runs for both backends on every PR that changes the Agent Runtime or its SDK pins; a lobe's Eval Suite runs on the backend and model committed for that lobe.
 - **Pin both SDKs exactly** (`==`) in the Agent Runtime's `pyproject.toml`, so an SDK upgrade touches a safety-critical path and must pass the contract test.
 - **Commit the choice, not the secrets.** The backend and model for each lobe are committed configuration, so changing either is a reviewed PR that runs the Eval Suite (§3: a deploy is a commit).
-  Only credentials come from the environment or a secret manager: an Anthropic API key for the Claude backend (or a cloud provider's Claude endpoint once hosting is decided, §11), and for the Copilot backend a GitHub token used only for Copilot, separate from the identities that push branches or open PRs.
+  Only credentials come from the environment or a secret manager.
+- **Authenticate both backends with subscription tokens, not pay-as-you-go keys.**
+  The Claude backend uses a Claude subscription token from `claude setup-token` (`CLAUDE_CODE_OAUTH_TOKEN`).
+  The Copilot backend uses the GitHub token of an account with a Copilot plan, used only for Copilot and separate from the identities that push branches or open PRs.
+  Tokens are personal: each developer and each deployment uses its own subscription, never another person's.
+  An Anthropic API key, or a cloud provider's Claude endpoint once hosting is decided (§11), remains a fallback for the Claude backend without code changes.
 - **Place the port and backends in a new top-level `agent-runtime/` component, classified safety-critical**, because a misconfigured backend bypasses the structural Tool Surface.
   The PR that adds its code also updates every file that lists safety-critical paths, commit scopes, or top-level components, including `scripts/checks/safety-critical-paths.txt`, `.github/CODEOWNERS`, `scripts/lib/conventions.sh`, ARCHITECTURE.md, AGENTS.md, CONTRIBUTING.md, and README.md.
 
@@ -54,7 +61,8 @@ We will:
 - We maintain two backends and their tests. Lobe code can use only features that the port exposes for both SDKs.
 - Both SDKs are young and ship bundled CLI binaries; expect frequent upgrade PRs, each safety-critical.
 - The container image must include both bundled CLIs, and the Copilot CLI must be shipped unmodified.
-- CI needs credentials for both backends, and both incur usage costs.
+- CI and every deployment need a subscription token per backend, and usage counts against those subscriptions' limits.
+- Anthropic's terms for subscription tokens in the Agent SDK have changed during 2026; if they change again, or programmatic usage moves to metered credits, the Claude backend switches to the API key fallback without a code change.
 - How each SDK exposes the effective tool list for the contract test is settled in the PR that implements the backend.
 
 ## Alternatives considered
@@ -63,6 +71,8 @@ We will:
   Not chosen: its Claude integration is beta and leaves built-in tools enabled by default, and it adds a layer we don't control in front of a safety-critical setting.
 - **Pydantic AI or LiteLLM calling model APIs directly.** The simplest way to control the tool list.
   Not chosen: their Copilot providers imitate VS Code against an undocumented endpoint, which is not a supported integration and can break without notice.
+- **Pay-as-you-go API keys by default.** Predictable terms and no per-user limits.
+  Not chosen: the owners already hold Claude and Copilot subscriptions and both SDKs accept subscription tokens; API keys stay available as a fallback.
 - **A single provider.** Simpler to build and test.
   Not chosen: it fails the swappable-backend requirement.
 - **Giving the Azure DevOps MCP server to the agent SDK and filtering its tools there.** Less adapter code.

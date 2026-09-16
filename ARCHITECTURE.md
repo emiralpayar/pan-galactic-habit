@@ -202,7 +202,7 @@ Content read from external systems (work item descriptions, comments, wiki pages
 | Write audit records | Operational Store (plus the external system's own history) | No |
 | User feedback (rejections, corrections) | Operational Store | No |
 | Per-time-window budget counters | Operational Store | No |
-| Secrets (external system tokens, LLM keys, GitHub tokens) | Secret manager | Not persisted in git or images |
+| Secrets (external system tokens, LLM subscription tokens and keys, GitHub tokens) | Secret manager | Not persisted in git or images |
 
 **Rules:**
 
