@@ -12,7 +12,7 @@ Azure DevOps, through the [`azure-devops`](../../adapters/azure-devops/) adapter
 
 ## Reads
 
-Work items, backlogs, and wiki pages — treated as untrusted data.
+Work items, backlog queries, work item comments, and wiki pages in the configured project — treated as untrusted data.
 
 ## Writes
 

@@ -116,7 +116,7 @@ flowchart TD
 
     subgraph LB["Lobe: Backlog Refiner"]
         CHAT["Chat Interface<br/>interactive, minimal"]
-        AG["Agent<br/>v1: single agent loop"]
+        AG["Agent<br/>v1: single agent loop<br/>on the Agent Runtime"]
         MEM[("Memory<br/>instructions + skills (.md)<br/>read-only at runtime")]
         POL[("Safety Policy<br/>allowlist, forbidden ops, budgets")]
         SL["Safety Layer Engine<br/>deterministic, shared"]
@@ -159,10 +159,10 @@ flowchart TD
 ### 5.2 Safety Layer enforcement
 
 - **Structural tool surface.** The agent is handed only the Tool Surface: allowlisted read tools and Safety Layer write tools. It never receives the raw tool list of an MCP server, a direct client to an external API, or an agent harness's built-in tools; the Agent Runtime enforces this for every backend and a contract test verifies it ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
-- **Deny by default.** The adapter exposes only operations it explicitly classifies as `read` or `write`; everything else in the external system is unreachable. The integration version is pinned (the REST `api-version`, or the server version for an adapter built on an MCP server), and changing it is a safety-critical PR, because a new version can change what an operation does or, for an MCP server, silently add write tools.
-- **Payload-level policy checks.** The engine validates the actual write payload (e.g. each JSON Patch operation and target field), not just the tool name.
+- **Deny by default.** The adapter can send only allowlisted requests, each operation explicitly classified as `read` or `write`; everything else in the external system is unreachable. An adapter built on an MCP server uses it for reads only, classifies every server tool, and fails at startup if the server's tool list differs from the classified set. The integration version is pinned (the REST `api-version`, or the server version for an adapter built on an MCP server), and changing it is a safety-critical PR, because a new version can change what an operation does or, for an MCP server, silently add write tools.
+- **Payload-level policy checks.** The engine validates the complete write request the adapter built (its target, its parameters, and every payload operation, e.g. each JSON Patch operation and target field), not just the tool name. Non-mutating preconditions such as a JSON Patch `test` are allowed; operations that copy from another path, such as `move` and `copy`, are rejected.
 - **Budgets.** Writes are capped at three levels: per call, per session, and per time window. Per-session counters may live in process memory; per-time-window counters live in the Operational Store. If the Operational Store is unavailable, writes **fail closed**.
-- **Write Confirmation.** Every write that passes the policy check is shown to the user as a diff preview in chat. It is executed only after explicit user confirmation, and it is re-validated against the policy at execution time.
+- **Write Confirmation.** Every write that passes the policy check is shown to the user as a diff preview in chat. It is executed only after explicit user confirmation, it is re-validated against the policy at execution time, and it fails if the target changed after the preview (for Azure DevOps, a revision `test`); such a failure is shown to the user, never retried automatically.
 - **Audit.** Every executed write (and every rejected one) produces an audit record in the Operational Store.
 - **Outer boundary.** Credentials used by the adapter are scoped to the minimum permissions the lobe's policy needs. If the Safety Layer fails, the external system's permissions still limit the damage.
 
@@ -246,7 +246,7 @@ Content read from external systems (work item descriptions, comments, wiki pages
       fixtures/             # sample inputs (e.g. work items)
       cases/                # expected qualities per fixture
 /adapters/
-  azure-devops/             # system-specific, extendable; tool classification lives here
+  azure-devops/             # system-specific, extendable; request allowlist lives here
 /safety-layer/
   core/                     # generic, system-agnostic engine
 /orchestrator/
@@ -309,6 +309,7 @@ The boundary check described in §4.2 is planned; it will be implemented with im
 4. **Budget values** for the Backlog Refiner (per call, per session, per time window).
 5. **Improver cadence and thresholds.**
 6. **Retention policy** for transcripts and audit records.
+7. **LLM credentials for shared deployments and autonomous agents.** Personal subscription tokens cover single-user runs only ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 
 ---
 

@@ -290,7 +290,7 @@ These paths control what the system can do to external systems, or control the g
 | Path | Why |
 |---|---|
 | `safety-layer/` | The write-gating engine |
-| `adapters/` | Operation classification and pinned API and MCP server versions |
+| `adapters/` | Request allowlists and pinned API and MCP server versions |
 | `lobes/*/policy/` | What each lobe may write |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI checks and repository protection |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/` | Local guardrails for humans and agents |
