@@ -1,4 +1,4 @@
-# pan-galactic-x
+# pan-galactic-habit
 
 A meta-agentic system that creates agentic flows (**habits**) on demand, versions them in git, and improves them over time — with every change gated by a pull request and human review.
 
@@ -19,8 +19,8 @@ A meta-agentic system that creates agentic flows (**habits**) on demand, version
 ## Getting started
 
 ```bash
-git clone https://github.com/emiralpayar/pan-galactic-refiner.git
-cd pan-galactic-refiner
+git clone https://github.com/emiralpayar/pan-galactic-habit.git
+cd pan-galactic-habit
 make setup   # installs git hooks and the commit message template
 make check   # runs the same convention and lint checks as CI
 ```

@@ -1,6 +1,6 @@
 # Security Policy
 
-pan-galactic-x runs agents that can write to external systems. A vulnerability here can mean unintended changes to real data, so we treat security reports as a priority.
+pan-galactic-habit runs agents that can write to external systems. A vulnerability here can mean unintended changes to real data, so we treat security reports as a priority.
 
 ## Reporting a vulnerability
 
