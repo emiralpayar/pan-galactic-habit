@@ -1,12 +1,12 @@
-# pan-galactic-x — Architecture Definition
+# pan-galactic-habit — Architecture Definition
 
-> **Purpose of this document:** This is the single source of truth for the architecture of `pan-galactic-x`. It is written for both humans and the AI agents that operate on this repository (Orchestrator, Improver, Claude Code sessions, etc.). When adding a new habit, opening a PR, or changing the system, the terms and principles here must not be contradicted. This document is living and should be updated as architectural decisions evolve.
+> **Purpose of this document:** This is the single source of truth for the architecture of `pan-galactic-habit`. It is written for both humans and the AI agents that operate on this repository (Orchestrator, Improver, Claude Code sessions, etc.). When adding a new habit, opening a PR, or changing the system, the terms and principles here must not be contradicted. This document is living and should be updated as architectural decisions evolve.
 
 ---
 
 ## 1. Overview
 
-`pan-galactic-x` is a meta-agentic system that dynamically creates agentic flows (**habits**) in response to user requests, versions those flows on GitHub, and can improve itself over time.
+`pan-galactic-habit` is a meta-agentic system that dynamically creates agentic flows (**habits**) in response to user requests, versions those flows on GitHub, and can improve itself over time.
 
 > **Why "habit":** a habit is a specialized behavior pattern learned through repetition and encoded in neural pathways — not a physical structure. Each habit in this system is likewise a self-contained unit of behavior and memory with one purpose, created and refined over time rather than fixed in hardware, and the system as a whole is the sum of its habits. See [ADR 0006](docs/adr/0006-rename-lobe-to-habit.md).
 
