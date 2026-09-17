@@ -1,6 +1,6 @@
 # NNNN. Title
 
-- **Status:** Proposed
+- **Status:** Accepted <!-- Proposed only if this PR opens the decision for discussion rather than deciding it -->
 - **Date:** YYYY-MM-DD
 - **Deciders:** <!-- GitHub handles -->
 

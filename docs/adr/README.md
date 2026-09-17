@@ -16,9 +16,9 @@ Easily reversible choices local to one component don't need an ADR; a good PR de
 ## How
 
 1. `make adr title="short decision title"` (or `scripts/new-adr.sh "…"`, or the `new-adr` Claude Code skill).
-2. Fill in every section. Start with status `Proposed`.
-3. Add it to the index below and update ARCHITECTURE.md if the decision changes it.
-4. Open a PR. The status becomes `Accepted` when the PR is merged.
+2. Fill in every section. Status is `Accepted` if this PR already carries out the decision — the common case, since a PR is normally opened once the decision is made. Use `Proposed` only if you're opening the PR to put the decision up for discussion before it's made.
+3. Add it to the index below, with the same status, and update ARCHITECTURE.md if the decision changes it.
+4. Open a PR. If the ADR was `Proposed`, flip it (and its index entry) to `Accepted` once the decision is actually made — before merging, or in a follow-up PR if the decision firms up after merge.
 
 ## Rules
 
