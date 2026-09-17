@@ -73,6 +73,11 @@ jobs:
           test -n "$logins"
           echo "logins=${logins},claude[bot]" >> "$GITHUB_OUTPUT"
 
+      # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB below needs bubblewrap for sandboxing/isolation;
+      # ubuntu-latest runners don't ship it.
+      - name: Install bubblewrap
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+
       - name: Run Claude
         # Pinned to a commit, not the moving v1 tag, because this step receives the OAuth secret.
         uses: anthropics/claude-code-action@7b0b255830a1fab6e602658672acad11c12d841d # v1
