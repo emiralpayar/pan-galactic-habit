@@ -36,3 +36,4 @@ Easily reversible choices local to one component don't need an ADR; a good PR de
 | [0004](0004-agent-runtime-port-with-claude-and-copilot-backends.md) | Agent runtime port with Claude and Copilot backends | Accepted |
 | [0005](0005-azure-devops-adapter-calls-the-rest-api-directly.md) | Azure DevOps adapter calls the REST API directly | Accepted |
 | [0006](0006-rename-lobe-to-habit.md) | Rename "lobe" to "habit" | Proposed |
+| [0007](0007-orchestrator-opens-habit-request-issues-not-prs.md) | Orchestrator opens habit-request issues, not PRs | Proposed |
