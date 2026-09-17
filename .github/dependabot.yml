@@ -12,4 +12,14 @@ updates:
       github-actions:
         patterns: ["*"]
 
-  # The first Python package adds a `uv` entry here (docs/adr/0003-use-python-as-the-implementation-language.md).
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    # No scope: Dependabot would use `deps-dev` for dev dependencies, which is not an allowed scope.
+    commit-message:
+      prefix: build
+    labels: [dependencies]
+    groups:
+      python:
+        patterns: ["*"]

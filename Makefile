@@ -13,14 +13,14 @@ setup: ## One-time local setup: git hooks, commit template, git defaults
 	@scripts/setup-dev.sh
 
 .PHONY: check
-check: check-branch lint ## Run all local checks (same as CI where possible)
+check: check-branch lint typecheck test imports ## Run all local checks (same as CI where possible)
 
 .PHONY: check-branch
 check-branch: ## Validate the current branch name
 	@scripts/checks/branch-name.sh
 
 .PHONY: lint
-lint: lint-md lint-sh ## Run all linters
+lint: lint-md lint-sh lint-py ## Run all linters
 
 .PHONY: lint-md
 lint-md: ## Lint markdown with markdownlint-cli2
@@ -31,6 +31,28 @@ lint-md: ## Lint markdown with markdownlint-cli2
 lint-sh: ## Lint shell scripts with shellcheck
 	@command -v shellcheck >/dev/null || { echo "shellcheck not found: https://github.com/koalaman/shellcheck#installing"; exit 1; }
 	@shellcheck $(SHELL_SCRIPTS)
+
+.PHONY: sync
+sync: ## Install the pinned Python and every workspace package from uv.lock
+	@command -v uv >/dev/null || { echo "uv not found: https://docs.astral.sh/uv/getting-started/installation/"; exit 1; }
+	@uv sync --locked --all-packages --quiet
+
+.PHONY: lint-py
+lint-py: sync ## Lint Python and check its formatting with ruff
+	@uv run --locked --all-packages ruff check
+	@uv run --locked --all-packages ruff format --check
+
+.PHONY: typecheck
+typecheck: sync ## Type-check Python with mypy --strict
+	@uv run --locked --all-packages mypy
+
+.PHONY: test
+test: sync ## Run Python tests with pytest
+	@uv run --locked --all-packages pytest
+
+.PHONY: imports
+imports: sync ## Check import-linter contracts (the boundary check, ARCHITECTURE.md §4.2)
+	@uv run --locked --all-packages lint-imports
 
 .PHONY: safety-guard
 safety-guard: ## List safety-critical changes versus origin/main

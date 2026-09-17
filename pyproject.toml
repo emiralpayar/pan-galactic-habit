@@ -1,0 +1,52 @@
+# Workspace root (ADR 0003). It is not a package itself: each component is a
+# member with its own pyproject.toml, and shared tool configuration lives here.
+
+[tool.uv]
+required-version = ">=0.12.15,<0.13"
+
+[tool.uv.workspace]
+members = ["safety-layer/core"]
+
+[dependency-groups]
+dev = [
+    "import-linter==2.15",
+    "mypy==2.3.1",
+    "pytest==9.1.1",
+    "ruff==0.16.8",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+# Python only: markdown is linted by markdownlint, not by the Python lint check.
+include = ["*.py", "*.pyi", "**/pyproject.toml"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "PT", "RUF", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+explicit_package_bases = true
+mypy_path = ["safety-layer/core/src"]
+files = ["safety-layer/core/src", "safety-layer/core/tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["safety-layer/core/tests"]
+addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib", "-ra"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.importlinter]
+root_packages = ["safety_layer"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+# Safety Layer invariant 1: decisions are deterministic code, never an LLM or a network call.
+name = "The Safety Layer imports no agent SDK, LLM client, or HTTP client"
+type = "forbidden"
+source_modules = ["safety_layer"]
+forbidden_modules = ["anthropic", "claude_agent_sdk", "copilot", "httpx", "openai", "requests", "urllib3"]
