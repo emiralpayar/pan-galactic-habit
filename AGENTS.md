@@ -85,11 +85,12 @@ scripts/checks/safety-guard.sh --base origin/main
 | `habits/<name>/evals/` | Fixtures and expected qualities | |
 | `adapters/` | System-specific integrations, request allowlists | ✅ |
 | `safety-layer/` | Deterministic write-gating engine | ✅ |
-| `orchestrator/`, `improver/` | Meta-agents that open PRs | |
+| `orchestrator/` | Meta-agent that opens habit-request issues (never PRs) | |
+| `improver/` | Meta-agent that opens PRs | |
 | `interface/` | Chat interface | |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI and repository controls | ✅ |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/`, `scripts/checks/`, `scripts/lib/` | Local guardrails and convention checks | ✅ |
 
 ## Current phase
 
-Pre-implementation. Next up is Phase 1: build the Backlog Refiner by hand (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Nothing in `habits/`, `adapters/`, `safety-layer/`, `orchestrator/`, `improver/`, or `interface/` is implemented yet — those folders contain only READMEs and placeholders.
+Pre-implementation. Next up is Phase 1: build the Backlog Refiner without the habit template (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Nothing in `habits/`, `adapters/`, `safety-layer/`, `orchestrator/`, `improver/`, or `interface/` is implemented yet — those folders contain only READMEs and placeholders.

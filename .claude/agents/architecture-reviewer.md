@@ -25,7 +25,7 @@ You are the architecture reviewer for pan-galactic-habit. You compare changes ag
 3. Check the habit template (§5) and repository layout (§9) — new files are in the right place.
 4. Check that open questions (§11) are not decided implicitly. Choosing a language, framework, LLM provider, hosting, or storage technology requires an ADR.
 5. Check that docs moved with the code: ARCHITECTURE.md, component READMEs, AGENTS.md, and an ADR when warranted.
-6. Check that the build order (§12) is respected — e.g. no Orchestrator work that depends on an unextracted template.
+6. Check that the build order (§12) is respected — e.g. no habit-request issue implementation that assumes a template extraction (§12 item 2) that hasn't happened yet.
 
 ## Output
 
