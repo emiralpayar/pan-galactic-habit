@@ -37,9 +37,9 @@
           { "context": "Markdown lint" },
           { "context": "Shell lint" },
           { "context": "Python lint" },
-          { "context": "Type check" },
-          { "context": "Tests" },
-          { "context": "Import contracts" }
+          { "context": "Python type check" },
+          { "context": "Python tests" },
+          { "context": "Python import contracts" }
         ]
       }
     }

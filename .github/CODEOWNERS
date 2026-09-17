@@ -24,3 +24,8 @@
 /.claude/hooks/                 @emiralpayar @mgokcay
 /scripts/checks/                @emiralpayar @mgokcay
 /scripts/lib/                   @emiralpayar @mgokcay
+
+# ── Safety-critical: Python workspace pins and import contracts ─────────
+/pyproject.toml                 @emiralpayar @mgokcay
+/uv.lock                        @emiralpayar @mgokcay
+/.python-version                @emiralpayar @mgokcay

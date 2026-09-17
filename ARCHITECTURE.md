@@ -89,7 +89,7 @@ flowchart TD
 
 - **Tests** — unit and integration tests for changed code.
 - **Evals** — the Eval Suite of every affected habit runs against the base branch and the PR branch; the before/after comparison is posted as a PR comment.
-- **Safety guard** — deterministically detects changes to safety-critical paths (`/safety-layer/`, `/adapters/`, `/habits/*/policy/`, adapter operation classifications, pinned API and MCP server versions) and to the repository's own guardrails (CI workflows, rulesets, CODEOWNERS, git and Claude Code hooks, the checks themselves). The authoritative list is `scripts/checks/safety-critical-paths.txt`. Such PRs are labeled `safety-critical`, must declare their `Safety-Impact` (`neutral`, `tightens`, or `loosens`), and require approval from the designated code owners (`CODEOWNERS`).
+- **Safety guard** — deterministically detects changes to safety-critical paths (`/safety-layer/`, `/adapters/`, `/habits/*/policy/`, adapter operation classifications, pinned API and MCP server versions) and to the repository's own guardrails (CI workflows, rulesets, CODEOWNERS, git and Claude Code hooks, the checks themselves, the Python workspace pins and import contracts). The authoritative list is `scripts/checks/safety-critical-paths.txt`. Such PRs are labeled `safety-critical`, must declare their `Safety-Impact` (`neutral`, `tightens`, or `loosens`), and require approval from the designated code owners (`CODEOWNERS`).
 - **Boundary check** — fails if habit code imports adapter write internals or otherwise reaches an external system's write path without going through the Safety Layer, or if code outside the Agent Runtime imports an agent SDK.
 
 ### 4.3 Review routing by change type

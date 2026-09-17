@@ -296,6 +296,7 @@ These paths control what the system can do to external systems, or control the g
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI checks and repository protection |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/` | Local guardrails for humans and agents |
 | `scripts/checks/`, `scripts/lib/` | The convention and safety checks themselves |
+| `pyproject.toml`, `uv.lock`, `.python-version` (repository root) | Dependency sources and pins for every workspace member, and the import contracts |
 
 The authoritative list is `scripts/checks/safety-critical-paths.txt`; keep it in sync with `.github/CODEOWNERS`.
 

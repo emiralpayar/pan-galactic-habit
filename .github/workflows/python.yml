@@ -2,6 +2,9 @@ name: Python
 
 # No path filters: these jobs are required status checks, and a required check
 # that never reports blocks the PR. They finish quickly when nothing changed.
+#
+# The commands are spelled out here rather than calling make, so what the
+# required checks run is defined in this safety-critical file.
 on:
   pull_request:
   push:
@@ -14,6 +17,7 @@ concurrency:
   group: python-${{ github.ref }}
   cancel-in-progress: true
 
+# setup-uv publishes no major-version tags, so it is pinned to a release commit.
 jobs:
   lint:
     name: Python lint
@@ -21,32 +25,37 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
-      - run: make lint-py
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - run: uv sync --locked --all-packages
+      - run: uv run --locked --all-packages ruff check
+      - run: uv run --locked --all-packages ruff format --check
 
   typecheck:
-    name: Type check
+    name: Python type check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
-      - run: make typecheck
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - run: uv sync --locked --all-packages
+      - run: uv run --locked --all-packages mypy
 
   test:
-    name: Tests
+    name: Python tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
-      - run: make test
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - run: uv sync --locked --all-packages
+      - run: uv run --locked --all-packages pytest
 
   imports:
-    name: Import contracts
+    name: Python import contracts
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
-      - run: make imports
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - run: uv sync --locked --all-packages
+      - run: uv run --locked --all-packages lint-imports

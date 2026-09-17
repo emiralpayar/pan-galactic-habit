@@ -89,6 +89,7 @@ scripts/checks/safety-guard.sh --base origin/main
 | `interface/` | Chat interface | |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI and repository controls | ✅ |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/`, `scripts/checks/`, `scripts/lib/` | Local guardrails and convention checks | ✅ |
+| `pyproject.toml`, `uv.lock`, `.python-version` | Python workspace pins and import contracts | ✅ |
 
 ## Current phase
 

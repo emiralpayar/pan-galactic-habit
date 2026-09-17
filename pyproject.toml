@@ -32,10 +32,10 @@ python_version = "3.13"
 strict = true
 explicit_package_bases = true
 mypy_path = ["safety-layer/core/src"]
-files = ["safety-layer/core/src", "safety-layer/core/tests"]
+files = ["tests", "safety-layer/core/src", "safety-layer/core/tests"]
 
 [tool.pytest.ini_options]
-testpaths = ["safety-layer/core/tests"]
+testpaths = ["tests", "safety-layer/core/tests"]
 addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib", "-ra"]
 xfail_strict = true
 filterwarnings = ["error"]
@@ -49,4 +49,16 @@ include_external_packages = true
 name = "The Safety Layer imports no agent SDK, LLM client, or HTTP client"
 type = "forbidden"
 source_modules = ["safety_layer"]
-forbidden_modules = ["anthropic", "claude_agent_sdk", "copilot", "httpx", "openai", "requests", "urllib3"]
+# Standard-library network modules are banned by ruff in safety-layer/core/ruff.toml.
+forbidden_modules = [
+    "aiohttp",
+    "anthropic",
+    "claude_agent_sdk",
+    "copilot",
+    "httpcore",
+    "httpx",
+    "mcp",
+    "openai",
+    "requests",
+    "urllib3",
+]
