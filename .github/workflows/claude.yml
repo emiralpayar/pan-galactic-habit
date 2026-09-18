@@ -73,10 +73,11 @@ jobs:
           test -n "$logins"
           echo "logins=${logins},claude[bot]" >> "$GITHUB_OUTPUT"
 
-      # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB below needs bubblewrap for sandboxing/isolation;
-      # ubuntu-latest runners don't ship it.
-      - name: Install bubblewrap
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      # CLAUDE_CODE_SUBPROCESS_ENV_SCRUB below needs bubblewrap for sandboxing/isolation
+      # and socat for the sandbox's network proxy; ubuntu-latest runners ship neither.
+      # Without both, the sandbox refuses to start and Claude gets no Bash tool at all.
+      - name: Install sandbox dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap socat
 
       - name: Run Claude
         # Pinned to a commit, not the moving v1 tag, because this step receives the OAuth secret.
