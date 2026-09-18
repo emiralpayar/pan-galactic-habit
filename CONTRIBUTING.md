@@ -42,7 +42,8 @@ Prerequisites: `git`, `bash`, `make`, and the [GitHub CLI](https://cli.github.co
 
 ```bash
 make setup   # points git at .githooks/, sets the commit template, enables fetch pruning
-make check   # runs the convention checks and linters CI runs
+make sync    # installs the pinned Python and every workspace package from uv.lock
+make check   # runs the convention checks, linters, type checks, tests, and import contracts CI runs
 make help    # lists all targets
 ```
 
@@ -295,6 +296,7 @@ These paths control what the system can do to external systems, or control the g
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI checks and repository protection |
 | `.githooks/`, `.claude/settings.json`, `.claude/hooks/` | Local guardrails for humans and agents |
 | `scripts/checks/`, `scripts/lib/` | The convention and safety checks themselves |
+| `pyproject.toml`, `uv.lock`, `.python-version` (repository root) | Dependency sources and pins for every workspace member, and the import contracts |
 
 The authoritative list is `scripts/checks/safety-critical-paths.txt`; keep it in sync with `.github/CODEOWNERS`.
 
@@ -365,7 +367,8 @@ See [AGENTS.md](AGENTS.md) and [docs/development/agentic-development.md](docs/de
   - `ruff format` and `ruff check` for formatting and linting, `mypy --strict` for types, `pytest` for tests.
   - Pydantic models at trust boundaries: policy files, tool inputs, and data read from external systems.
   - import-linter contracts enforce the boundary check (ARCHITECTURE.md §4.2).
-  - CI enforces these from the PR that adds the first Python code.
+  - CI enforces these in `.github/workflows/python.yml`; `make check` runs the same checks locally.
+  - Add or remove dependencies with `uv add` / `uv remove` in the member's directory and commit the updated `uv.lock`.
 - **Tests:** new behavior comes with tests. Bug fixes come with a test that fails without the fix.
 - **Comments** explain *why*, not *what*.
 

@@ -1,0 +1,13 @@
+# Engine-only lint rules on top of the workspace configuration. The import contract in
+# the root pyproject.toml covers third-party packages; these cover the standard library.
+
+extend = "../../pyproject.toml"
+
+[lint]
+extend-select = ["TID251"]
+
+[lint.flake8-tidy-imports.banned-api]
+"socket".msg = "Safety Layer invariant 1: no network calls."
+"http.client".msg = "Safety Layer invariant 1: no network calls."
+"urllib.request".msg = "Safety Layer invariant 1: no network calls."
+"importlib.import_module".msg = "Dynamic imports would bypass the import contracts."

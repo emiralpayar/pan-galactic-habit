@@ -35,7 +35,11 @@
           { "context": "Commit messages" },
           { "context": "Safety guard" },
           { "context": "Markdown lint" },
-          { "context": "Shell lint" }
+          { "context": "Shell lint" },
+          { "context": "Python lint" },
+          { "context": "Python type check" },
+          { "context": "Python tests" },
+          { "context": "Python import contracts" }
         ]
       }
     }

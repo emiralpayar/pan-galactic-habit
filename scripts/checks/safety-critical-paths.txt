@@ -22,3 +22,8 @@ habits/*/policy/*
 # The checks themselves
 scripts/checks/*
 scripts/lib/*
+
+# Python workspace: dependency sources and pins for every member, and the import contracts
+pyproject.toml
+uv.lock
+.python-version

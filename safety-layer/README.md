@@ -27,4 +27,4 @@ These must hold for every change to this component, and must be covered by tests
 
 | Path | Contents |
 |---|---|
-| `core/` | The generic engine |
+| `core/` | The generic engine: the `safety_layer` package and its tests |
