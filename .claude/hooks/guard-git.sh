@@ -77,14 +77,35 @@ if [[ "$cmd" =~ $re ]]; then
   fi
 
   re_bare="${git_cmd} push( (-u|--set-upstream|origin))*( *$|[ ]*[;&|])"
-  if [[ "$cmd" =~ $re_bare ]] && [ "$current_branch" = "main" ]; then
-    block "you are on 'main'; a bare 'git push' would push to main."
+  # "push ... HEAD" names no explicit branch either; it pushes whatever is
+  # checked out, same as a bare push.
+  re_head="${git_cmd} push( (-u|--set-upstream|origin))* HEAD([ ;&|]|$)"
+  if { [[ "$cmd" =~ $re_bare ]] || [[ "$cmd" =~ $re_head ]]; } && [ "$current_branch" = "main" ]; then
+    block "you are on 'main'; this push would push to main."
   fi
 
   re_force="${git_cmd} push${seg} (--force|-f)([ ;&|]|$)"
   re_plus="${git_cmd} push${seg} \+[^ ]"
   if [[ "$cmd" =~ $re_force ]] || [[ "$cmd" =~ $re_plus ]]; then
     block "plain force-push is not allowed. Use --force-with-lease on your own branch."
+  fi
+
+  # Deleting a remote ref (branch or tag) is never part of the issue -> branch
+  # -> PR flow; block it regardless of which branch is current.
+  re_delete_flag="${git_cmd} push${seg} (--delete|-d)([ ;&|]|$)"
+  re_delete_refspec="${git_cmd} push${seg} :[^ ;&|]+"
+  if [[ "$cmd" =~ $re_delete_flag ]] || [[ "$cmd" =~ $re_delete_refspec ]]; then
+    block "deleting a remote branch or tag is not allowed."
+  fi
+
+  # `git push --receive-pack='sh -c …'` and the ext:: transport both run a command
+  # of the pusher's choosing on this machine, so a push rule alone is not a push
+  # rule. This is why the Claude GitHub action allowlists its own git-push.sh
+  # wrapper instead of `git push`.
+  re_exec="${git_cmd} push${seg} (--receive-pack|--exec)[ =]"
+  re_transport="${git_cmd} push${seg} (ext|ftp|ftps)::"
+  if [[ "$cmd" =~ $re_exec ]] || [[ "$cmd" =~ $re_transport ]]; then
+    block "this push form can run an arbitrary command. Push a branch to 'origin' by name."
   fi
 fi
 
