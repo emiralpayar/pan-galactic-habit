@@ -18,7 +18,13 @@
       "Bash(make lint-sh)",
       "Bash(scripts/checks/branch-name.sh:*)",
       "Bash(scripts/checks/commit-message.sh:*)",
-      "Bash(scripts/checks/safety-guard.sh:*)"
+      "Bash(scripts/checks/safety-guard.sh:*)",
+      "Edit",
+      "Write",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch -c:*)",
+      "Bash(git push:*)"
     ],
     "deny": [
       "Bash(gh pr merge:*)",
