@@ -97,6 +97,16 @@ if [[ "$cmd" =~ $re ]]; then
   if [[ "$cmd" =~ $re_delete_flag ]] || [[ "$cmd" =~ $re_delete_refspec ]]; then
     block "deleting a remote branch or tag is not allowed."
   fi
+
+  # `git push --receive-pack='sh -c …'` and the ext:: transport both run a command
+  # of the pusher's choosing on this machine, so a push rule alone is not a push
+  # rule. This is why the Claude GitHub action allowlists its own git-push.sh
+  # wrapper instead of `git push`.
+  re_exec="${git_cmd} push${seg} (--receive-pack|--exec)[ =]"
+  re_transport="${git_cmd} push${seg} (ext|ftp|ftps)::"
+  if [[ "$cmd" =~ $re_exec ]] || [[ "$cmd" =~ $re_transport ]]; then
+    block "this push form can run an arbitrary command. Push a branch to 'origin' by name."
+  fi
 fi
 
 # ── Merging and approving PRs ─────────────────────────────────────────────
