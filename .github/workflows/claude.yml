@@ -79,6 +79,14 @@ jobs:
       - name: Install sandbox dependencies
         run: sudo apt-get update && sudo apt-get install -y bubblewrap socat
 
+      # bubblewrap creates its sandbox with an unprivileged user namespace, which
+      # ubuntu-latest (24.04) blocks by default via AppArmor: bwrap fails with
+      # "setting up uid map: Permission denied" even though it's installed. This lowers
+      # the restriction for this job's runner only — a fresh, disposable VM torn down
+      # when the job ends — so bwrap can do what it was installed to do.
+      - name: Allow unprivileged user namespaces for the sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Run Claude
         # Pinned to a commit, not the moving v1 tag, because this step receives the OAuth secret.
         uses: anthropics/claude-code-action@7b0b255830a1fab6e602658672acad11c12d841d # v1
