@@ -12,7 +12,7 @@
 
 Three defining properties:
 
-1. **Dynamic habits** — habits are not predefined. An `Orchestrator Agent` designs the required agentic flow and memory on demand, based on the user's request.
+1. **Dynamic habits** — habits are not predefined. An `Orchestrator Agent` clarifies a user's request into a habit-request issue; the agentic flow and memory are then generated against the habit template (§5) when that issue is implemented, by whoever picks it up ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)).
 2. **Git as the source of truth** — all behavior and memory (habit code, memory, safety policies, evals) lives in the git repository. The deployed application holds no authoritative state. Operational data (sessions, audit logs, feedback) lives in a separate, **non-authoritative** store (see §7).
 3. **A single approval gate** — every change to behavior or memory, whoever authored it (Orchestrator, Improver, or a habit proposing a change about itself), goes through the same mechanism: a **GitHub Pull Request, automated checks, human review, and merge**.
 
@@ -22,7 +22,7 @@ Three defining properties:
 
 | Term | Meaning |
 |---|---|
-| **Habit** | An independent agentic flow serving a specific purpose, with its own memory, safety policy, and evals (e.g. the Backlog Refiner). Not predefined — created by the Orchestrator. |
+| **Habit** | An independent agentic flow serving a specific purpose, with its own memory, safety policy, and evals (e.g. the Backlog Refiner). Not predefined — requested via the Orchestrator and generated against the habit template (§5) when its issue is implemented. |
 | **Memory** | The set of `.md` files (instructions + skills) that make up a habit's memory. Lives in git, inside the habit's own folder. It is **versioned configuration**, not something the habit writes to at runtime. |
 | **Chat Interface** | The interface through which a user talks to a habit. For v1: a minimal, interactive chat interface. |
 | **Orchestrator Agent** | The agent that talks to the user over chat (Claude Code-like), clarifies what a new habit needs to do, and opens a habit-request issue capturing it. It does not design the habit or open the PR itself; implementation happens separately through the normal issue → PR workflow ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)). |
@@ -112,7 +112,7 @@ CI builds a container image with the repository contents baked in, tags it with 
 
 ## 5. Habit Runtime Template
 
-This shows the standard set of parts the Orchestrator must assemble for every new habit. The example below is grounded in the first use case, the **Backlog Refiner**.
+This shows the standard set of parts every new habit is assembled from, by whoever implements its habit-request issue. The example below is grounded in the first use case, the **Backlog Refiner**.
 
 ```mermaid
 flowchart TD
@@ -147,7 +147,7 @@ flowchart TD
     CHAT -- "sessions, feedback" --> OPS
 ```
 
-### 5.1 What the Orchestrator needs to assemble a habit
+### 5.1 What a new habit is assembled from
 
 | Part | Source in v1 |
 |---|---|
@@ -288,7 +288,7 @@ The boundary check described in §4.2 is planned; it will be implemented with im
 ## 10. Resolved Design Decisions
 
 1. **Adapter and Safety Layer sharing.** The Safety Layer **engine** and adapters are shared code. Each habit carries its own **Safety Policy**, reviewed together with that habit. This gives reuse without letting one habit's permissions leak into another's.
-2. **Orchestrator's ephemeral creations.** A habit assembled for a single session may run without a PR **only if it is read-only** (its Tool Surface contains no write tools). Anything that writes to an external system, or anything meant to persist, must be opened as a PR.
+2. ~~**Orchestrator's ephemeral creations.** A habit assembled for a single session may run without a PR only if it is read-only (its Tool Surface contains no write tools). Anything that writes to an external system, or anything meant to persist, must be opened as a PR.~~ **Superseded by [ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md).** The Orchestrator no longer assembles habits at all, ephemeral or otherwise — it only clarifies a request and opens a habit-request issue. There is no session-only habit; every habit, without exception, is generated and reviewed through the normal issue → branch → PR workflow.
 3. **Approval UI differing by change type.** Handled by path-based review routing, PR labels, and eval output (§4.3) rather than a custom approval UI.
 4. **When and how the Improver triggers.** The Improver analyzes signals from the Operational Store and CI:
    - suggestions rejected by users in chat,
@@ -320,11 +320,11 @@ The boundary check described in §4.2 is planned; it will be implemented with im
 
 ## 12. Build Order
 
-The Orchestrator depends on a template that must first be proven by a real habit. Build in this order:
+A reusable habit template (§5) must first be proven by a real habit before it can be handed to anyone implementing a future habit-request issue. Build in this order:
 
-1. **Backlog Refiner, by hand.** Agent, memory, Safety Policy, Safety Layer engine, Agent Runtime, Azure DevOps adapter, Chat Interface, Eval Suite, CI checks. *Exit criteria:* the habit refines real work items end-to-end with Write Confirmation and audit records.
-2. **Extract the template.** Turn §5 from a description into code that is proven by the Backlog Refiner (shared engine, reusable chat interface, adapter contract, policy schema, eval harness).
-3. **Orchestrator.** Generates new habits against the extracted template and opens them as PRs.
+1. **Backlog Refiner, without the template.** Agent, memory, Safety Policy, Safety Layer engine, Agent Runtime, Azure DevOps adapter, Chat Interface, Eval Suite, CI checks — written directly, not generated, since no template exists yet. Implemented like any other issue: by a human, or by an AI agent picking it up. *Exit criteria:* the habit refines real work items end-to-end with Write Confirmation and audit records.
+2. **Extract the template.** Turn §5 from a description into code that is proven by the Backlog Refiner (shared engine, reusable chat interface, adapter contract, policy schema, eval harness), packaged as the `new-habit` skill so anyone implementing a habit-request issue — human or AI agent — can generate a new habit's scaffold from it.
+3. **Orchestrator.** A chat-only agent that clarifies a user's request and opens a habit-request issue ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)); it does not generate the habit itself. It has no direct dependency on the extracted template, but is sequenced here to dogfood the template against a real habit-request issue first.
 4. **Improver.** Built last, once real operational data exists to learn from.
 
 ---
