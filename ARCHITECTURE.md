@@ -1,12 +1,12 @@
-# pan-galactic-x — Architecture Definition
+# pan-galactic-habit — Architecture Definition
 
-> **Purpose of this document:** This is the single source of truth for the architecture of `pan-galactic-x`. It is written for both humans and the AI agents that operate on this repository (Orchestrator, Improver, Claude Code sessions, etc.). When adding a new habit, opening a PR, or changing the system, the terms and principles here must not be contradicted. This document is living and should be updated as architectural decisions evolve.
+> **Purpose of this document:** This is the single source of truth for the architecture of `pan-galactic-habit`. It is written for both humans and the AI agents that operate on this repository (Orchestrator, Improver, Claude Code sessions, etc.). When adding a new habit, opening a PR, or changing the system, the terms and principles here must not be contradicted. This document is living and should be updated as architectural decisions evolve.
 
 ---
 
 ## 1. Overview
 
-`pan-galactic-x` is a meta-agentic system that dynamically creates agentic flows (**habits**) in response to user requests, versions those flows on GitHub, and can improve itself over time.
+`pan-galactic-habit` is a meta-agentic system that dynamically creates agentic flows (**habits**) in response to user requests, versions those flows on GitHub, and can improve itself over time.
 
 > **Why "habit":** a habit is a specialized behavior pattern learned through repetition and encoded in neural pathways — not a physical structure. Each habit in this system is likewise a self-contained unit of behavior and memory with one purpose, created and refined over time rather than fixed in hardware, and the system as a whole is the sum of its habits. See [ADR 0006](docs/adr/0006-rename-lobe-to-habit.md).
 
@@ -25,7 +25,7 @@ Three defining properties:
 | **Habit** | An independent agentic flow serving a specific purpose, with its own memory, safety policy, and evals (e.g. the Backlog Refiner). Not predefined — created by the Orchestrator. |
 | **Memory** | The set of `.md` files (instructions + skills) that make up a habit's memory. Lives in git, inside the habit's own folder. It is **versioned configuration**, not something the habit writes to at runtime. |
 | **Chat Interface** | The interface through which a user talks to a habit. For v1: a minimal, interactive chat interface. |
-| **Orchestrator Agent** | The agent that talks to the user over chat (Claude Code-like), designs the habit the request needs, and opens it as a PR. |
+| **Orchestrator Agent** | The agent that talks to the user over chat (Claude Code-like), clarifies what a new habit needs to do, and opens a habit-request issue capturing it. It does not design the habit or open the PR itself; implementation happens separately through the normal issue → PR workflow ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)). |
 | **Improver Agent** | An autonomous agent that analyzes signals from the Operational Store and eval results, and opens improvement PRs when needed. |
 | **Safety Layer** | A deterministic (non-LLM) code layer that gates every outbound **write** to an external system. Consists of a shared, system-agnostic **engine** and a per-habit **policy**. |
 | **Safety Policy** | A small declarative file inside a habit's folder that configures the Safety Layer engine for that habit (field allowlist, forbidden operations, write budgets). |
@@ -64,7 +64,9 @@ flowchart TD
     OPS --> IMP["Improver Agent<br/>Analyzes signals, proposes"]
     HABIT["Running Habit<br/>Self-proposal"]
 
-    ORC -- "new habit draft" --> PR
+    ORC -- "habit request" --> ISSUE[("GitHub Issue<br/>habit request")]
+    ISSUE -- "assigned, or @claude-mentioned" --> IMPLEMENTER["Human or AI agent<br/>implements the habit"]
+    IMPLEMENTER --> PR
     IMP -- "improvement diff" --> PR
     HABIT -- "self-improvement diff" --> PR
 
@@ -77,11 +79,13 @@ flowchart TD
 
 **Note:** the moment the user chats with the Orchestrator and the moment a human approves the PR are usually the same person, but they are two distinct steps — one is a statement of intent (chat), the other is the final decision on the actual diff (GitHub review). This distinction is intentional.
 
+**Note:** for new habit creation, the Orchestrator's output is a habit-request issue, not a PR — it only clarifies and records the request. Implementation is a separate step, done by whoever picks up the issue (a human, or an AI agent via `@claude` assignment), following the same branch → checks → review → deploy path as any other change. This split does not apply to the Improver Agent or to a habit's own self-proposal, which continue to open PRs directly ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)).
+
 ### 4.1 Authors
 
 | Author | Trigger | Output |
 |---|---|---|
-| Orchestrator Agent | A user request in chat | PR creating a new habit |
+| Orchestrator Agent | A user request in chat | Habit-request issue; implementation and the resulting PR are done separately, by a human or an AI agent who picks up the issue ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)) |
 | Improver Agent | Signals in the Operational Store or eval regressions (see §10.4) | PR improving an existing habit |
 | Running habit | The habit identifies a gap in its own memory or behavior during a session | PR proposing a change to itself |
 
@@ -216,7 +220,7 @@ Content read from external systems (work item descriptions, comments, wiki pages
 
 | Actor | Can | Cannot |
 |---|---|---|
-| Orchestrator Agent | Push to non-main branches, open PRs | Approve or merge PRs, push to `main`, write to external systems |
+| Orchestrator Agent | Open GitHub issues (habit requests) | Push branches, open PRs itself, approve or merge PRs, push to `main`, write to external systems |
 | Improver Agent | Read the Operational Store and eval results, push to non-main branches, open PRs | Approve or merge PRs, push to `main`, write to external systems |
 | Running habit | Read via its adapter; write via the Safety Layer after Write Confirmation; open self-proposal PRs | Modify its own memory or policy at runtime, access raw write tools, approve or merge PRs |
 | CI | Run tests and evals, build images, deploy | Approve or merge PRs |

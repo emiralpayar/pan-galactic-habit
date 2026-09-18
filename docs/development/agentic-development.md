@@ -1,6 +1,6 @@
 # Agentic Development
 
-How humans and AI agents build pan-galactic-x together. The rules in [CONTRIBUTING.md](../../CONTRIBUTING.md) apply to everyone; this guide covers what is specific to working with agents.
+How humans and AI agents build pan-galactic-habit together. The rules in [CONTRIBUTING.md](../../CONTRIBUTING.md) apply to everyone; this guide covers what is specific to working with agents.
 
 ## Roles
 
