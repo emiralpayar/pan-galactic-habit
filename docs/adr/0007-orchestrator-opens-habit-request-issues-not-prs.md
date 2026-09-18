@@ -15,7 +15,7 @@ This conflates two different activities in one agent session:
 
 Requiring the same Orchestrator session to do both means it must be capable of full habit implementation to handle even a simple request. Meanwhile, the repository already has the pieces to run implementation as its own step: a habit-request issue template capturing exactly the fields a habit needs, the standard issue → branch → PR workflow in AGENTS.md, and a connected `@claude` GitHub App (issue #6) that can implement from an assigned issue and open the PR itself.
 
-Full problem statement and rationale: [issue #9](https://github.com/emiralpayar/pan-galactic-refiner/issues/9).
+Full problem statement and rationale: [issue #9](https://github.com/emiralpayar/pan-galactic-habit/issues/9).
 
 ## Decision
 
