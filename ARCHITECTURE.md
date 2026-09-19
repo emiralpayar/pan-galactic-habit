@@ -303,19 +303,19 @@ The boundary check described in §4.2 is planned; it will be implemented with im
 9. **Agent framework and LLM provider.** Agents run through the Agent Runtime port with two backends, the Claude Agent SDK and the GitHub Copilot SDK. The backend and model for each habit are committed configuration, and habit sessions are restricted to the Tool Surface ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 10. **Azure DevOps integration.** The adapter calls the REST API directly; MCP servers remain an option for other adapters and are never exposed to agents ([ADR 0005](docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)).
 11. **Terminology: "habit," not "lobe."** A habit is a specialized behavior pattern learned and encoded over time, not a physical structure — the accurate counterpart to the earlier "lobe" naming ([ADR 0006](docs/adr/0006-rename-lobe-to-habit.md)).
-12. **Hosting, user authentication, write identity, and LLM credentials.** One Lightsail instance runs the application image behind a Caddy reverse proxy; the Operational Store is SQLite on a mounted volume; users authenticate with built-in password auth (admin-created accounts); external writes use one shared service account per system, with the confirming user recorded in the audit record; shared deployments and autonomous agents use separate, spend-capped API keys ([ADR 0008](docs/adr/0008-deploy-to-a-single-lightsail-vps-with-built-in-user-auth.md)).
+12. **Operational Store technology and write identity.** The Operational Store is SQLite behind a store port and fails closed; external writes use one least-privilege service account per system, with attribution in our audit records ([ADR 0008](docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md)).
 
 ---
 
 ## 11. Open Questions
 
-1. ~~**Hosting**, and the technology for the Operational Store and secret manager.~~ **Resolved by [ADR 0008](docs/adr/0008-deploy-to-a-single-lightsail-vps-with-built-in-user-auth.md).**
-2. ~~**User authentication** for the Chat Interface.~~ **Resolved by [ADR 0008](docs/adr/0008-deploy-to-a-single-lightsail-vps-with-built-in-user-auth.md).**
-3. ~~**Write identity in external systems.**~~ **Resolved by [ADR 0008](docs/adr/0008-deploy-to-a-single-lightsail-vps-with-built-in-user-auth.md).**
+1. **Hosting**, and the secret manager. The Operational Store technology is decided ([ADR 0008](docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md): SQLite behind a store port).
+2. **User authentication** for the Chat Interface.
+3. ~~**Write identity in external systems.**~~ **Resolved by [ADR 0008](docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md).**
 4. **Budget values** for the Backlog Refiner (per call, per session, per time window).
 5. **Improver cadence and thresholds.**
 6. **Retention policy** for transcripts and audit records.
-7. ~~**LLM credentials for shared deployments and autonomous agents.**~~ **Resolved by [ADR 0008](docs/adr/0008-deploy-to-a-single-lightsail-vps-with-built-in-user-auth.md).**
+7. **LLM credentials for shared deployments and autonomous agents.** Personal subscription tokens cover single-user runs only ([ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)).
 
 ---
 
