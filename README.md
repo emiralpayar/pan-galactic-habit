@@ -2,7 +2,7 @@
 
 A meta-agentic system that creates agentic flows (**habits**) on demand, versions them in git, and improves them over time — with every change gated by a pull request and human review.
 
-> **Status:** pre-implementation. The architecture is defined; Phase 1 (the Backlog Refiner, built without the habit template) has not started. See [ARCHITECTURE.md §12](ARCHITECTURE.md#12-build-order).
+> **Status:** Phase 1 in progress — the Backlog Refiner, built without the habit template. Progress is tracked in [#13](https://github.com/emiralpayar/pan-galactic-habit/issues/13). See [ARCHITECTURE.md §12](ARCHITECTURE.md#12-build-order).
 
 ## Start here
 

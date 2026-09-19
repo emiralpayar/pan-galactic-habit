@@ -1,0 +1,24 @@
+# Safety Policy for the Backlog Refiner (ARCHITECTURE.md §5.2, §6). Safety-critical.
+#
+# Deny by default: the habit may call only the operations listed under `writes`, and
+# change only the fields listed for each. State changes, assignment, and deletion are
+# forbidden because they are not listed; do not add a rule for them.
+#
+# Field names are Azure DevOps field reference names, as the adapter sends them.
+
+habit: backlog-refiner
+
+writes:
+  - operation: update-work-item
+    fields:
+      - System.Description
+      - Microsoft.VSTS.Common.AcceptanceCriteria
+      - System.Tags
+
+# Placeholder values: deliberately small until ARCHITECTURE.md §11.4 decides them.
+budgets:
+  per_call: 1
+  per_session: 10
+  per_time_window:
+    limit: 25
+    window_minutes: 1440

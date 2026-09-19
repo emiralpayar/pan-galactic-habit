@@ -25,7 +25,7 @@ habits/<name>/
     instructions.md       # follows docs/development/memory-style-guide.md
     skills/
   policy/
-    safety-policy.yaml    # field allowlist, forbidden operations, budgets
+    safety-policy.yaml    # operation and field allowlist, budgets
   evals/
     fixtures/             # synthetic inputs only
     cases/                # expected qualities per fixture
@@ -34,7 +34,7 @@ habits/<name>/
 ## Rules
 
 - The name is lowercase kebab-case; it automatically becomes a valid commit scope.
-- The Safety Policy is **deny by default**: list only what is explicitly allowed.
+- The Safety Policy is **deny by default**: list only what is explicitly allowed. What the habit must never do is forbidden by leaving it out; record it in a comment in the policy, as `habits/backlog-refiner/policy/safety-policy.yaml` does. The format is described in `safety-layer/README.md`.
 - Budgets must be set at all three levels (per call, per session, per time window).
 - Eval fixtures are synthetic. Never copy real work items or customer data.
 - Never give the agent raw access to the external system's write tools.

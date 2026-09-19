@@ -3,7 +3,10 @@ name = "safety-layer"
 version = "0.0.0"
 description = "Deterministic engine that gates every write to an external system."
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pydantic==2.13.5",
+    "pyyaml==6.0.3",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13"]
