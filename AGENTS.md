@@ -94,4 +94,4 @@ scripts/checks/safety-guard.sh --base origin/main
 
 ## Current phase
 
-Pre-implementation. Next up is Phase 1: build the Backlog Refiner without the habit template (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Nothing in `habits/`, `adapters/`, `safety-layer/`, `orchestrator/`, `improver/`, or `interface/` is implemented yet — those folders contain only READMEs and placeholders.
+Phase 1, in progress: build the Backlog Refiner without the habit template (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Only the Safety Policy loader (`safety-layer/core`) and the Backlog Refiner's policy exist so far; the rest of `habits/`, `adapters/`, `orchestrator/`, `improver/`, and `interface/` contains only READMEs and placeholders. Progress is tracked in #13.

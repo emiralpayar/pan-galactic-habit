@@ -14,7 +14,7 @@ habits/<name>/
     instructions.md       # see docs/development/memory-style-guide.md
     skills/*.md
   policy/
-    safety-policy.yaml    # field allowlist, forbidden operations, budgets  [safety-critical]
+    safety-policy.yaml    # operation and field allowlist, budgets  [safety-critical]
   evals/
     fixtures/             # synthetic inputs
     cases/                # expected qualities per fixture
@@ -34,4 +34,4 @@ habits/<name>/
 
 | Habit | Purpose | External system | Status |
 |---|---|---|---|
-| [backlog-refiner](backlog-refiner/) | Refine backlog items against a Definition of Ready | Azure DevOps | Not started (Phase 1) |
+| [backlog-refiner](backlog-refiner/) | Refine backlog items against a Definition of Ready | Azure DevOps | In progress (Phase 1) |

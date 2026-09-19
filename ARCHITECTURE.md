@@ -28,7 +28,7 @@ Three defining properties:
 | **Orchestrator Agent** | The agent that talks to the user over chat (Claude Code-like), clarifies what a new habit needs to do, and opens a habit-request issue capturing it. It does not design the habit or open the PR itself; implementation happens separately through the normal issue → PR workflow ([ADR 0007](docs/adr/0007-orchestrator-opens-habit-request-issues-not-prs.md)). |
 | **Improver Agent** | An autonomous agent that analyzes signals from the Operational Store and eval results, and opens improvement PRs when needed. |
 | **Safety Layer** | A deterministic (non-LLM) code layer that gates every outbound **write** to an external system. Consists of a shared, system-agnostic **engine** and a per-habit **policy**. |
-| **Safety Policy** | A small declarative file inside a habit's folder that configures the Safety Layer engine for that habit (field allowlist, forbidden operations, write budgets). |
+| **Safety Policy** | A small declarative file inside a habit's folder that configures the Safety Layer engine for that habit (an allowlist of operations and the fields each may change, and write budgets). Anything it does not list is forbidden. |
 | **Adapter** | A system-specific, extendable integration layer (e.g. the Azure DevOps adapter). Exposes an explicit allowlist of the external system's operations, each classified as read or write. Adding a new system means writing a new adapter. |
 | **Tool Surface** | The exact set of tools a habit's agent is given: allowlisted read tools from the adapter plus write tools exposed only through the Safety Layer. Never the raw tool list of an external system or MCP server. |
 | **Agent Runtime** | The port through which agent sessions run on a model backend (v1: the Claude Agent SDK or the GitHub Copilot SDK, chosen per habit by committed configuration). In a habit session, each backend is restricted so the model is offered exactly the Tool Surface. See [ADR 0004](docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md). |
@@ -122,7 +122,7 @@ flowchart TD
         CHAT["Chat Interface<br/>interactive, minimal"]
         AG["Agent<br/>v1: single agent loop<br/>on the Agent Runtime"]
         MEM[("Memory<br/>instructions + skills (.md)<br/>read-only at runtime")]
-        POL[("Safety Policy<br/>allowlist, forbidden ops, budgets")]
+        POL[("Safety Policy<br/>operation and field allowlist, budgets")]
         SL["Safety Layer Engine<br/>deterministic, shared"]
         AD["Adapter<br/>Azure DevOps, extendable<br/>deny-by-default operation allowlist"]
 
@@ -185,8 +185,8 @@ Content read from external systems (work item descriptions, comments, wiki pages
 - **Adapter:** Azure DevOps, via its REST API at pinned `api-version`s ([ADR 0005](docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)). Read operations (work items, WIQL queries, comments, wiki pages) are allowlisted; the only write operation, a JSON Patch work item update guarded by a revision `test`, is reachable only through the Safety Layer.
 - **Safety Policy:**
   - Writes limited to the Description, Acceptance Criteria, and Tags fields.
-  - State changes, assignment, and deletion are forbidden.
-  - Budgets per call, per session, and per time window (values to be set in the policy file; see §11).
+  - State changes, assignment, and deletion are forbidden, by omission from the allowlist.
+  - Budgets per call, per session, and per time window (placeholder values in the policy file until §11 decides them).
   - Every write requires Write Confirmation.
 - **Credentials:** least-privilege; no permission to change state, assign, or delete work items.
 - **Agent:** for v1, a single agent loop — evaluates backlog state and user prompts, and produces refinement suggestions.
@@ -245,7 +245,7 @@ Content read from external systems (work item descriptions, comments, wiki pages
       skills/
         *.md
     policy/
-      safety-policy.yaml    # field allowlist, forbidden ops, budgets
+      safety-policy.yaml    # operation and field allowlist, budgets
     evals/
       fixtures/             # sample inputs (e.g. work items)
       cases/                # expected qualities per fixture

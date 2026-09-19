@@ -1,6 +1,6 @@
 # Backlog Refiner
 
-> **Status:** not started — Phase 1 (ARCHITECTURE.md §12). This habit is built without the habit template and becomes the reference it is later extracted from.
+> **Status:** in progress — Phase 1 (ARCHITECTURE.md §12). Only the Safety Policy exists so far. This habit is built without the habit template and becomes the reference it is later extracted from.
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Only through the Safety Layer, only after user Write Confirmation, and only to:
 - Acceptance Criteria
 - Tags
 
-Forbidden: State changes, assignment, deletion. Budgets per call, per session, and per time window are defined in `policy/safety-policy.yaml` (values to be decided — ARCHITECTURE.md §11).
+Forbidden: State changes, assignment, deletion — by omission from the allowlist in `policy/safety-policy.yaml`. Budgets per call, per session, and per time window are defined there too; the current values are placeholders until ARCHITECTURE.md §11.4 decides them.
 
 ## Layout
 

@@ -8,14 +8,15 @@ The adapter calls the API directly at pinned `api-version`s; it does not use the
 ## Operations
 
 The adapter can send only these requests; anything else is rejected before it is sent.
+The identifier is the operation name Safety Policies use (`safety-layer/README.md`).
 
-| Operation | Kind | Request (api-version at adoption) | Limits |
-|---|---|---|---|
-| Get work items | read | `GET _apis/wit/workitems` (7.1) | Items from other projects are dropped |
-| Find work items | read | `POST _apis/wit/wiql` (7.1) | Built from structured filters; the agent never supplies WIQL; `[System.TeamProject] = @project` is always added; results are capped |
-| Get work item comments | read | `GET _apis/wit/workItems/{id}/comments` (7.1-preview.4) | Configured project only |
-| Get wiki page | read | `GET _apis/wiki/wikis/{wikiIdentifier}/pages` (7.1) | Configured wikis only |
-| Update work item | write, Safety Layer only | `PATCH _apis/wit/workitems/{id}` (7.1) | Integer id in the configured project; query string is `api-version` only; JSON Patch starts with a `test` on `/rev` from the preview read |
+| Operation | Identifier | Kind | Request (api-version at adoption) | Limits |
+|---|---|---|---|---|
+| Get work items | `get-work-items` | read | `GET _apis/wit/workitems` (7.1) | Items from other projects are dropped |
+| Find work items | `find-work-items` | read | `POST _apis/wit/wiql` (7.1) | Built from structured filters; the agent never supplies WIQL; `[System.TeamProject] = @project` is always added; results are capped |
+| Get work item comments | `get-work-item-comments` | read | `GET _apis/wit/workItems/{id}/comments` (7.1-preview.4) | Configured project only |
+| Get wiki page | `get-wiki-page` | read | `GET _apis/wiki/wikis/{wikiIdentifier}/pages` (7.1) | Configured wikis only |
+| Update work item | `update-work-item` | write, Safety Layer only | `PATCH _apis/wit/workitems/{id}` (7.1) | Integer id in the configured project; query string is `api-version` only; JSON Patch starts with a `test` on `/rev` from the preview read |
 
 Read volume is also capped per session.
 A write rejected because the revision changed fails closed and is shown to the user; it is never retried automatically.
