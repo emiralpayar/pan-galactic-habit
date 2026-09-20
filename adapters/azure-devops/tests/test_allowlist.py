@@ -1,8 +1,11 @@
+from collections.abc import AsyncIterator
+
 import httpx
 import pytest
+from pydantic import SecretStr
+
 from azure_devops.allowlist import ALLOWLIST, AllowlistTransport, RequestNotAllowedError, operations
 from azure_devops.config import AzureDevOpsConfig
-from pydantic import SecretStr
 
 CONFIG = AzureDevOpsConfig(
     organization="contoso", project="Sandbox", token=SecretStr("not-a-real-token")
@@ -81,6 +84,46 @@ def test_a_request_outside_the_allowlist_is_rejected(url: str, reason: str) -> N
 def test_only_the_allowlisted_method_reaches_an_endpoint(method: str) -> None:
     with pytest.raises(RequestNotAllowedError, match="not an allowlisted request"):
         _check(ALLOWED, method=method)
+
+
+@pytest.mark.parametrize("header", ["X-HTTP-Method-Override", "x-http-method", "X-Method-Override"])
+def test_a_method_override_header_is_rejected(header: str) -> None:
+    # Azure DevOps applies the override, so the method checked would not be the method sent.
+    with pytest.raises(RequestNotAllowedError, match="method override"):
+        _check(ALLOWED, headers={header: "PATCH"})
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        pytest.param("ids=1;api-version=9.9&api-version=7.1", id="semicolon-separator"),
+        pytest.param("ids=1&api-version=7.1&", id="trailing-separator"),
+    ],
+)
+def test_a_query_that_could_be_read_two_ways_is_rejected(query: str) -> None:
+    with pytest.raises(RequestNotAllowedError, match="canonical"):
+        _check(f"{CONFIG.base_url}_apis/wit/workitems?{query}")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        pytest.param("contoso%2FSandbox/_apis/wit/workitems", id="encoded-slash-in-project"),
+        pytest.param("contoso/Sandbox/_apis%2Fwit%2Fworkitems", id="encoded-slash-in-path"),
+        pytest.param("contoso/Sandbox/_apis/wit%5Cworkitems", id="encoded-backslash"),
+    ],
+)
+def test_an_encoded_separator_is_rejected(path: str) -> None:
+    with pytest.raises(RequestNotAllowedError, match=r"encoded separator|outside"):
+        _check(f"https://dev.azure.com/{path}?ids=1&api-version=7.1")
+
+
+def test_a_streamed_body_cannot_hide_from_the_body_check() -> None:
+    async def body() -> "AsyncIterator[bytes]":
+        yield b'{"query": "select *"}'  # pragma: no cover - never sent
+
+    with pytest.raises(RequestNotAllowedError, match="no body"):
+        _transport().check(httpx.Request("GET", ALLOWED, content=body()))
 
 
 def test_a_get_may_not_carry_a_body() -> None:

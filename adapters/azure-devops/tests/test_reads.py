@@ -3,10 +3,11 @@ from collections.abc import Callable
 
 import httpx
 import pytest
+from pydantic import SecretStr
+
 from azure_devops.allowlist import RequestNotAllowedError
 from azure_devops.config import AzureDevOpsConfig
 from azure_devops.reads import AzureDevOpsError, WorkItemReader
-from pydantic import SecretStr
 
 CONFIG = AzureDevOpsConfig(
     organization="contoso", project="Sandbox", token=SecretStr("not-a-real-token")
@@ -127,7 +128,7 @@ async def test_ids_azure_devops_omits_are_skipped() -> None:
 @pytest.mark.parametrize("status", [400, 401, 403, 404, 429, 500, 503])
 async def test_an_error_response_raises_without_quoting_the_body(status: int) -> None:
     async with _reader(_responds({"message": "Work item 7: secret title"}, status)) as reader:
-        with pytest.raises(AzureDevOpsError, match=f"returned {status}") as raised:
+        with pytest.raises(AzureDevOpsError, match=f"get-work-items returned {status}") as raised:
             await reader.get_work_items([7])
 
     assert "secret title" not in str(raised.value)
@@ -135,11 +136,19 @@ async def test_an_error_response_raises_without_quoting_the_body(status: int) ->
 
 @pytest.mark.anyio
 async def test_a_redirect_is_not_followed() -> None:
-    elsewhere = "https://evil.test/contoso/Sandbox/_apis/wit/workitems"
-    async with _reader(_responds(None, 302)) as reader:
+    elsewhere = "https://evil.test/contoso/Sandbox/_apis/wit/workitems?ids=1&api-version=7.1"
+    seen: list[httpx.URL] = []
+
+    def redirect(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url)
+        return httpx.Response(302, headers={"location": elsewhere})
+
+    async with _reader(redirect) as reader:
         with pytest.raises(AzureDevOpsError, match="returned 302"):
             await reader.get_work_items([1])
-    assert elsewhere  # the redirect target is never requested; see the allowlist tests
+
+    # The credential travels with the request, so it must not follow a redirect anywhere.
+    assert [url.host for url in seen] == ["dev.azure.com"]
 
 
 @pytest.mark.anyio
@@ -148,6 +157,22 @@ async def test_a_redirect_is_not_followed() -> None:
     [
         pytest.param({"count": 1}, id="no-value"),
         pytest.param({"count": 1, "value": [{"id": 1}]}, id="no-fields"),
+        pytest.param(
+            {
+                "count": 1,
+                "value": [
+                    {
+                        "id": 1,
+                        "rev": 1,
+                        "project": "Sandbox",
+                        "type": "Bug",
+                        "title": "t",
+                        "state": "New",
+                    }
+                ],
+            },
+            id="flat-item-without-fields",
+        ),
         pytest.param({"count": 1, "value": [{"id": 1, "rev": 1, "fields": []}]}, id="fields-list"),
         pytest.param(
             {"count": 1, "value": [{"id": 0, "rev": 1, "fields": {}}]}, id="missing-field"

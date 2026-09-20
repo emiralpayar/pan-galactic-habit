@@ -10,6 +10,7 @@ endpoint that is not listed here.
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Final, Literal
+from urllib.parse import quote, urlencode
 
 import httpx
 
@@ -20,6 +21,7 @@ __all__ = [
     "AllowedRequest",
     "AllowlistTransport",
     "RequestNotAllowedError",
+    "find",
     "operations",
 ]
 
@@ -45,6 +47,12 @@ class AllowedRequest:
     query: frozenset[str] = field(default_factory=frozenset)
 
 
+# Azure DevOps applies these instead of the method on the wire, so a POST that passed the
+# check as a read could arrive as a PATCH.
+_METHOD_OVERRIDE_HEADERS: Final = frozenset(
+    {"x-http-method-override", "x-http-method", "x-method-override"}
+)
+
 # Pinned api-versions (ADR 0005). Changing one is a safety-critical PR that links the
 # API's change notes for the affected endpoints.
 ALLOWLIST: Final = (
@@ -54,9 +62,19 @@ ALLOWLIST: Final = (
         method="GET",
         path="_apis/wit/workitems",
         api_version="7.1",
+        # `ids` is organization-scoped: this entry does not confine the request to the
+        # configured project, so the caller drops work items from other projects.
         query=frozenset({"ids", "fields", "errorPolicy"}),
     ),
 )
+
+
+def find(operation: str) -> AllowedRequest:
+    """The allowlist entry for one operation, so its path and api-version have one source."""
+    for request in ALLOWLIST:
+        if request.operation == operation:
+            return request
+    raise KeyError(operation)
 
 
 def operations(kind: Literal["read", "write"]) -> tuple[AllowedRequest, ...]:
@@ -108,6 +126,14 @@ class AllowlistTransport(httpx.AsyncBaseTransport):
         if not url.path.startswith(self._base_path):
             raise RequestNotAllowedError(f"{url.path} is outside {self._base_path}")
 
+        if overrides := sorted(
+            _METHOD_OVERRIDE_HEADERS & {name.lower() for name in request.headers}
+        ):
+            raise RequestNotAllowedError(f"method override headers: {overrides}")
+        raw_path = url.raw_path.split(b"?")[0].decode()
+        if "%2f" in raw_path.casefold() or "%5c" in raw_path.casefold():
+            raise RequestNotAllowedError("an encoded separator makes the path ambiguous")
+
         path = url.path.removeprefix(self._base_path)
         for allowed in self._allowed:
             if allowed.method == request.method and _path_matches(allowed.path, path):
@@ -116,7 +142,8 @@ class AllowlistTransport(httpx.AsyncBaseTransport):
         raise RequestNotAllowedError(f"{request.method} {path} is not an allowlisted request")
 
     def _check_query(self, request: httpx.Request, allowed: AllowedRequest) -> None:
-        values: Mapping[str, list[str]] = _grouped(request.url.params.multi_items())
+        items = list(request.url.params.multi_items())
+        values: Mapping[str, list[str]] = _grouped(items)
         if repeated := sorted(name for name, seen in values.items() if len(seen) > 1):
             raise RequestNotAllowedError(f"repeated query parameters: {repeated}")
         if unlisted := sorted(set(values) - allowed.query - {"api-version"}):
@@ -127,8 +154,22 @@ class AllowlistTransport(httpx.AsyncBaseTransport):
             raise RequestNotAllowedError(
                 f"{allowed.operation} is pinned to api-version {allowed.api_version}"
             )
-        if allowed.method == "GET" and request.content:
+        # `?ids=1;api-version=9.9` parses as one parameter above, but anything in front of
+        # Azure DevOps that still splits on `;` would read a different api-version than the
+        # one checked here. Requiring the raw query to match its own re-encoding removes
+        # every such difference between what is checked and what is sent.
+        if request.url.query.decode() != urlencode(items, quote_via=quote, safe=""):
+            raise RequestNotAllowedError("the query string is not in canonical form")
+        if allowed.method == "GET" and self._has_body(request):
             raise RequestNotAllowedError(f"{allowed.operation} takes no body")
+
+    @staticmethod
+    def _has_body(request: httpx.Request) -> bool:
+        try:
+            return bool(request.content)
+        except httpx.StreamError:
+            # A streamed body cannot be inspected, so it cannot be shown to be empty.
+            return True
 
 
 def _grouped(items: Iterator[tuple[str, str]] | list[tuple[str, str]]) -> dict[str, list[str]]:

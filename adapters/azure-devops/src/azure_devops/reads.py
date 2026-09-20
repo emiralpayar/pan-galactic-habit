@@ -11,13 +11,14 @@ from typing import Self
 import httpx
 from pydantic import ValidationError
 
-from azure_devops.allowlist import AllowlistTransport, operations
+from azure_devops.allowlist import AllowedRequest, AllowlistTransport, find, operations
 from azure_devops.config import AzureDevOpsConfig
 from azure_devops.models import WORK_ITEM_FIELDS, WorkItem, WorkItemBatch
 
 __all__ = ["AzureDevOpsError", "WorkItemReader"]
 
-GET_WORK_ITEMS = "_apis/wit/workitems"
+# The path and api-version come from the allowlist, so a version bump has one place to change.
+GET_WORK_ITEMS = find("get-work-items")
 TIMEOUT_SECONDS = 30.0
 
 
@@ -72,7 +73,7 @@ class WorkItemReader:
                 "ids": ",".join(str(id_) for id_ in requested),
                 "fields": ",".join(WORK_ITEM_FIELDS),
                 "errorPolicy": "omit",
-                "api-version": "7.1",
+                "api-version": GET_WORK_ITEMS.api_version,
             },
         )
         batch = self._parse(response, WorkItemBatch)
@@ -91,16 +92,16 @@ class WorkItemReader:
             )
         return unique
 
-    async def _get(self, path: str, params: dict[str, str]) -> httpx.Response:
+    async def _get(self, operation: AllowedRequest, params: dict[str, str]) -> httpx.Response:
         try:
-            response = await self._client.get(path, params=params)
+            response = await self._client.get(operation.path, params=params)
         except httpx.HTTPError as error:
             # str(error) can hold the request URL but never the Authorization header.
-            raise AzureDevOpsError(f"GET {path} failed: {error}") from error
+            raise AzureDevOpsError(f"{operation.operation} failed: {error}") from error
         if response.is_success:
             return response
         # The body can quote work item content, so only the status line is reported.
-        raise AzureDevOpsError(f"GET {path} returned {response.status_code}")
+        raise AzureDevOpsError(f"{operation.operation} returned {response.status_code}")
 
     def _parse[T: WorkItemBatch](self, response: httpx.Response, model: type[T]) -> T:
         try:

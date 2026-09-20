@@ -45,9 +45,11 @@ class WorkItem(_External):
     @model_validator(mode="before")
     @classmethod
     def _flatten_fields(cls, data: Any) -> Any:
-        if not isinstance(data, dict) or "fields" not in data:
+        if not isinstance(data, dict):
             return data
-        fields = data["fields"]
+        # Every work item Azure DevOps returns carries `fields`. Without it, the values below
+        # would come from top-level keys instead, including the project the filter checks.
+        fields = data.get("fields")
         if not isinstance(fields, dict):
             raise ValueError("fields must be a mapping")
         tags = fields.get("System.Tags")

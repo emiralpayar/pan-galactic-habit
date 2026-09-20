@@ -21,7 +21,7 @@ The identifier is the operation name Safety Policies use (`safety-layer/README.m
 Only the operations implemented so far are on the allowlist in code; the rest of this table is the plan.
 Adding one is a safety-critical PR, and adding the write operation is `Safety-Impact: loosens`.
 
-Read volume is also capped per session.
+Read volume is capped per call; the per-session cap is not implemented yet.
 A write rejected because the revision changed fails closed and is shown to the user; it is never retried automatically.
 
 ## How the allowlist is enforced
@@ -37,6 +37,9 @@ Redirects are not followed: a redirect would send the request, and its credentia
 | `config.py` | The one organization and project the adapter talks to, and its token |
 | `models.py` | Pydantic views of the responses; everything in them is untrusted data |
 | `reads.py` | Read operations |
+
+The adapter is async, because agent SDK tool calls are ([ADR 0004](../../docs/adr/0004-agent-runtime-port-with-claude-and-copilot-backends.md)), while the Safety Layer engine is synchronous deterministic code.
+The write path therefore needs a seam between the two; it is designed with that step, not here.
 
 ## Credentials
 
