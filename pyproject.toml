@@ -5,7 +5,7 @@
 required-version = ">=0.12.15,<0.13"
 
 [tool.uv.workspace]
-members = ["safety-layer/core"]
+members = ["adapters/azure-devops", "safety-layer/core"]
 
 [dependency-groups]
 dev = [
@@ -26,23 +26,30 @@ include = ["*.py", "*.pyi", "**/pyproject.toml"]
 select = ["E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "PT", "RUF", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101"]
+# S101: tests assert. S105/S106: test credentials are obvious fakes, never real secrets.
+"**/tests/**" = ["S101", "S105", "S106"]
 
 [tool.mypy]
 python_version = "3.13"
 strict = true
 explicit_package_bases = true
-mypy_path = ["safety-layer/core/src"]
-files = ["tests", "safety-layer/core/src", "safety-layer/core/tests"]
+mypy_path = ["adapters/azure-devops/src", "safety-layer/core/src"]
+files = [
+    "tests",
+    "adapters/azure-devops/src",
+    "adapters/azure-devops/tests",
+    "safety-layer/core/src",
+    "safety-layer/core/tests",
+]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "safety-layer/core/tests"]
+testpaths = ["tests", "adapters/azure-devops/tests", "safety-layer/core/tests"]
 addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib", "-ra"]
 xfail_strict = true
 filterwarnings = ["error"]
 
 [tool.importlinter]
-root_packages = ["safety_layer"]
+root_packages = ["azure_devops", "safety_layer"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
@@ -54,6 +61,7 @@ source_modules = ["safety_layer"]
 forbidden_modules = [
     "aiohttp",
     "anthropic",
+    "azure_devops",
     "claude_agent_sdk",
     "copilot",
     "httpcore",
@@ -62,4 +70,18 @@ forbidden_modules = [
     "openai",
     "requests",
     "urllib3",
+]
+
+[[tool.importlinter.contracts]]
+# ARCHITECTURE.md §5.2: an agent never receives an SDK's own tools or a raw API client,
+# and the adapter's own decisions stay deterministic.
+name = "The Azure DevOps adapter imports no agent SDK or LLM client"
+type = "forbidden"
+source_modules = ["azure_devops"]
+forbidden_modules = [
+    "anthropic",
+    "claude_agent_sdk",
+    "copilot",
+    "mcp",
+    "openai",
 ]
