@@ -9,6 +9,7 @@ How humans and AI agents build pan-galactic-habit together. The rules in [CONTRI
 | **Developer** | Their own GitHub account | Author PRs, review and approve *others'* PRs, merge | Approve their own PRs |
 | **Claude Code session** (assisted) | The developer's git and GitHub identity | Branch, commit, push branches, open PRs | Commit to or push `main`, approve, merge, bypass hooks |
 | **Claude GitHub app** (`@claude`) | The Claude app's bot identity | When a collaborator mentions it on an issue, or a PR's author on that PR: comment, push to a `claude/…` branch or that PR's branch | Approve, merge, push `main`, run repository code, run for anyone else |
+| **Claude review** (automatic) | The Claude app's bot identity | On a collaborator's non-draft PR: read the checkout, comment | Edit files, run commands, push, approve, request changes, run for forks |
 | **Autonomous agent** (Orchestrator, Improver, habit) — *future* | A dedicated GitHub bot account | Push `agent/…` branches, open PRs | Approve, merge, write outside its scope |
 
 **Accountability stays human.** The developer running a session owns every PR it opens; the reviewer who approves an agent-authored PR owns that approval.
@@ -53,6 +54,17 @@ Mentioning `@claude` runs `.github/workflows/claude.yml`.
 - **What it cannot run.** Tool rules deny repository code (`make`, `scripts/`), git commands that can run code or print credentials, and access to `.git/`, because on a PR those files come from the PR's branch. Claude therefore never verifies its own work: it pushes a branch and CI runs the same checks. The only build commands it may run are `uv add --no-sync` and `uv lock`, enough to record a dependency without building the checked-out project. The action restores only Claude's own configuration (such as `.claude/`, `CLAUDE.md`, and `.mcp.json`) from the base branch; `AGENTS.md`, which `CLAUDE.md` imports, is read from the checked-out branch. These rules reduce the risk; they are not a sandbox.
 - **Untrusted content.** An issue or PR body reaches the model even when someone outside the project wrote it, and its author can edit it until the moment you mention `@claude`. Read it first.
 - **Changes to the workflow** are safety-critical, like every file in `.github/workflows/`. Never set `ACTIONS_STEP_DEBUG` on this repository: it makes the action print full tool output to public logs.
+
+## Claude review
+
+`.github/workflows/claude-review.yml` reviews a pull request when it is opened, reopened, or marked ready for review. It does not run on every push; mention `@claude` on your PR to ask for another look.
+
+- **Whose PRs.** Non-draft PRs from a branch in this repository, by the owner or a collaborator. Fork PRs and Dependabot PRs are skipped, so neither gets secrets nor reaches the model.
+- **What it does.** Reads the checkout and comments: inline comments on specific lines and a short summary. It checks the change against AGENTS.md, ARCHITECTURE.md, and CONTRIBUTING.md, with extra attention to safety-critical paths and anything that loosens a control.
+- **What it cannot do.** Edit files, run commands (there is no Bash tool), push, approve, or request changes. The allow list and deny list are in `claude_args`. Without a command tool, text in a diff cannot make Claude run anything. It can still read files, so deny rules keep it out of `.git/`, `/proc`, and the runner's credential locations, and the checkout keeps no credentials (`persist-credentials: false`). These rules reduce the risk and are not proven to catch every path, such as a symlink committed in a PR. Treat a prompt injection as able to cause a misleading comment and, at worst, an attempt to quote a file.
+- **It is advisory.** It is not a required check and does not replace the human review or the `safety-reviewer` agent. A clean review means Claude found nothing, not that the change is safe.
+- **The workflow file comes from the PR.** On `pull_request`, a PR can change this workflow and run its own version. That needs write access, as does editing `claude.yml`, and `.github/workflows/` is code-owned, but the review happens at merge: the PR's own version of the workflow runs with the secret before anyone approves it. A collaborator's PR is therefore trusted to that extent.
+- **Files come from the PR's branch too.** `AGENTS.md`, `ARCHITECTURE.md`, and the READMEs it reads are the PR's versions. A PR that weakens a rule can weaken what Claude checks it against, so read the diff of those files yourself.
 
 ## Parallel sessions
 
