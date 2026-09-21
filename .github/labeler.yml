@@ -9,6 +9,7 @@ behavior:
   - changed-files:
       - any-glob-to-any-file:
           - "habits/*/agent/**"
+          - "agent-runtime/**"
           - "orchestrator/**"
           - "improver/**"
           - "interface/**"

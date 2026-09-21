@@ -9,6 +9,7 @@
 *                               @emiralpayar @mgokcay
 
 # ── Safety-critical: system safety controls ─────────────────────────────
+/agent-runtime/                 @emiralpayar @mgokcay
 /safety-layer/                  @emiralpayar @mgokcay
 /adapters/                      @emiralpayar @mgokcay
 /habits/*/policy/               @emiralpayar @mgokcay

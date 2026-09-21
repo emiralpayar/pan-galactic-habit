@@ -158,6 +158,7 @@ The scope is optional but strongly encouraged. It must be one of:
 |---|---|
 | `<habit-name>` | Any directory under `habits/`, e.g. `backlog-refiner` |
 | `<adapter-name>` | Any directory under `adapters/`, e.g. `azure-devops` |
+| `agent-runtime` | Agent Runtime port and backends |
 | `safety-layer` | Safety Layer engine |
 | `adapters` | Cross-adapter contracts and shared adapter code |
 | `orchestrator` | Orchestrator Agent |
@@ -290,6 +291,7 @@ These paths control what the system can do to external systems, or control the g
 
 | Path | Why |
 |---|---|
+| `agent-runtime/` | The Tool Surface the model sees: SDK configuration and its contract test |
 | `safety-layer/` | The write-gating engine |
 | `adapters/` | Request allowlists and pinned API and MCP server versions |
 | `habits/*/policy/` | What each habit may write |

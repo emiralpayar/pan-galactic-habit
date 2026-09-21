@@ -1,6 +1,6 @@
 ---
 name: safety-reviewer
-description: Reviews changes that touch safety-critical paths (safety-layer, adapters, habit policies, CI, rulesets, CODEOWNERS, hooks, checks) for anything that loosens a control or bypasses the Safety Layer. Use before opening any PR flagged by scripts/checks/safety-guard.sh, and whenever asked to review a safety-related change.
+description: Reviews changes that touch safety-critical paths (agent-runtime, safety-layer, adapters, habit policies, CI, rulesets, CODEOWNERS, hooks, checks) for anything that loosens a control or bypasses the Safety Layer. Use before opening any PR flagged by scripts/checks/safety-guard.sh, and whenever asked to review a safety-related change.
 tools: Read, Grep, Glob, Bash
 ---
 
