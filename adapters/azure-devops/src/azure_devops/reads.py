@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from typing import Self
 
 import httpx
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from azure_devops.allowlist import AllowedRequest, AllowlistTransport, find, operations
 from azure_devops.config import AzureDevOpsConfig
@@ -65,6 +65,9 @@ class WorkItemReader:
         """Read work items by id, dropping any that belong to another project.
 
         Ids Azure DevOps cannot return are omitted rather than failing the whole batch.
+        Raises `ValueError` for bad ids and `AzureDevOpsError` when Azure DevOps fails.
+        `RequestNotAllowedError` is deliberately not wrapped: it means this code built a
+        request the allowlist refuses, which is a bug to surface, not an outage to handle.
         """
         requested = self._checked_ids(ids)
         response = await self._get(
@@ -98,13 +101,26 @@ class WorkItemReader:
         except httpx.HTTPError as error:
             # str(error) can hold the request URL but never the Authorization header.
             raise AzureDevOpsError(f"{operation.operation} failed: {error}") from error
-        if response.is_success:
+        # Azure DevOps answers a bad token with 203 and a sign-in page, so only 200 carries data.
+        if response.status_code == httpx.codes.OK:
             return response
         # The body can quote work item content, so only the status line is reported.
         raise AzureDevOpsError(f"{operation.operation} returned {response.status_code}")
 
-    def _parse[T: WorkItemBatch](self, response: httpx.Response, model: type[T]) -> T:
+    def _parse[T: BaseModel](self, response: httpx.Response, model: type[T]) -> T:
         try:
             return model.model_validate_json(response.content)
         except ValidationError as error:
-            raise AzureDevOpsError(f"unexpected {model.__name__} payload: {error}") from error
+            # The error's own text quotes the payload, so only where validation failed and
+            # why is reported, and the error is not chained. The locations are the models'
+            # field names and indexes; a mapping field would put payload keys in them.
+            problems = [
+                f"{detail['type']} at {'.'.join(map(str, detail['loc'])) or 'the top level'}"
+                for detail in error.errors(
+                    include_url=False, include_context=False, include_input=False
+                )
+            ]
+            more = f", and {len(problems) - 3} more" if len(problems) > 3 else ""
+            raise AzureDevOpsError(
+                f"unexpected {model.__name__} payload: {', '.join(problems[:3])}{more}"
+            ) from None

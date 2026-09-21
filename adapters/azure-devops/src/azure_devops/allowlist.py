@@ -121,6 +121,9 @@ class AllowlistTransport(httpx.AsyncBaseTransport):
         url = request.url
         if url.scheme != "https" or url.host != HOST or url.port not in (None, 443):
             raise RequestNotAllowedError(f"{url.scheme}://{url.netloc.decode()} is not {HOST}")
+        # The connection goes to the URL's host, but a front end could route on the header.
+        if request.headers.get("host") != HOST:
+            raise RequestNotAllowedError(f"the Host header is not {HOST}")
         if url.userinfo or url.fragment:
             raise RequestNotAllowedError("credentials and fragments do not belong in a request URL")
         if not url.path.startswith(self._base_path):

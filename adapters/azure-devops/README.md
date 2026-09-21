@@ -12,7 +12,7 @@ The identifier is the operation name Safety Policies use (`safety-layer/README.m
 
 | Operation | Identifier | Kind | Request (api-version at adoption) | Limits |
 |---|---|---|---|---|
-| Get work items | `get-work-items` | read | `GET _apis/wit/workitems` (7.1) | Items from other projects are dropped |
+| Get work items | `get-work-items` | read | `GET _apis/wit/workitems` (7.1) | Items from other projects are dropped, after the whole batch is parsed: a malformed item from another project fails the call |
 | Find work items | `find-work-items` | read | `POST _apis/wit/wiql` (7.1) | Built from structured filters; the agent never supplies WIQL; `[System.TeamProject] = @project` is always added; results are capped |
 | Get work item comments | `get-work-item-comments` | read | `GET _apis/wit/workItems/{id}/comments` (7.1-preview.4) | Configured project only |
 | Get wiki page | `get-wiki-page` | read | `GET _apis/wiki/wikis/{wikiIdentifier}/pages` (7.1) | Configured wikis only |
@@ -27,9 +27,10 @@ A write rejected because the revision changed fails closed and is shown to the u
 ## How the allowlist is enforced
 
 `AllowlistTransport` wraps the httpx transport, so the check runs on the request as it is about to leave the process, after any code has built it.
-It verifies the scheme, host, organization, and project, then matches the method and path against the allowlist and checks that every query parameter is listed and that `api-version` is the pinned one.
+It verifies the scheme, the host in the URL and the `Host` header, the organization, and the project, then matches the method and path against the allowlist and checks that every query parameter is listed and that `api-version` is the pinned one.
 A client is constructed with one kind of operation, so read code cannot reach a write request even if one is added to the allowlist later.
 Redirects are not followed: a redirect would send the request, and its credential, to an address nobody allowlisted.
+Errors name the operation, the status code, or where a response failed validation; they never quote a response, since its content is untrusted.
 
 | Module | Contents |
 |---|---|
@@ -51,4 +52,4 @@ The write path therefore needs a seam between the two; it is designed with that 
 - Which service account the token belongs to, and where it is stored. [ADR 0008](../../docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md) decides that writes use one least-privilege service account per system, which resolves the question [ADR 0005](../../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md) left open; where the credential lives is decided with hosting (ARCHITECTURE.md §11.1).
 - How the token reaches `AzureDevOpsConfig`: it is passed in, and nothing here reads the environment yet.
 - Pagination, retry, and rate-limit handling.
-- The caps for query results and per-session reads.
+- The caps for query results, per-session reads, and response size.

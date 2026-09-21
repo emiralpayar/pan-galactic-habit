@@ -1,4 +1,5 @@
 import json
+import traceback
 from collections.abc import Callable
 
 import httpx
@@ -125,7 +126,8 @@ async def test_ids_azure_devops_omits_are_skipped() -> None:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("status", [400, 401, 403, 404, 429, 500, 503])
+# Azure DevOps answers a bad token with 203 and a sign-in page, so only 200 is a success.
+@pytest.mark.parametrize("status", [203, 400, 401, 403, 404, 429, 500, 503])
 async def test_an_error_response_raises_without_quoting_the_body(status: int) -> None:
     async with _reader(_responds({"message": "Work item 7: secret title"}, status)) as reader:
         with pytest.raises(AzureDevOpsError, match=f"get-work-items returned {status}") as raised:
@@ -191,6 +193,43 @@ async def test_a_payload_that_is_not_json_raises() -> None:
     async with _reader(lambda _: httpx.Response(200, text="<html>sign in</html>")) as reader:
         with pytest.raises(AzureDevOpsError, match="unexpected"):
             await reader.get_work_items([1])
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "response",
+    [
+        pytest.param(httpx.Response(200, text="<html>Sign in SECRET-BODY</html>"), id="not-json"),
+        pytest.param(
+            httpx.Response(
+                200, json={"count": 1, "value": [{**_work_item(1), "rev": "SECRET-BODY"}]}
+            ),
+            id="wrong-type",
+        ),
+    ],
+)
+async def test_an_unexpected_payload_is_not_quoted(response: httpx.Response) -> None:
+    # The payload is untrusted content; an error that quoted it could carry injected text
+    # into a log or an agent's context (ARCHITECTURE.md §5.3).
+    async with _reader(lambda _: response) as reader:
+        with pytest.raises(AzureDevOpsError, match="unexpected") as raised:
+            await reader.get_work_items([1])
+
+    assert "SECRET-BODY" not in "".join(traceback.format_exception(raised.value))
+
+
+@pytest.mark.anyio
+async def test_an_unexpected_payload_names_where_it_failed() -> None:
+    items = [{"id": id_, "rev": 1, "fields": {}} for id_ in range(1, 6)]
+    async with _reader(_responds({"count": 5, "value": items})) as reader:
+        with pytest.raises(AzureDevOpsError) as raised:
+            await reader.get_work_items([1])
+
+    # Each item lacks four required fields; only the first three problems are listed.
+    assert str(raised.value) == (
+        "unexpected WorkItemBatch payload: string_type at value.0.project, "
+        "string_type at value.0.type, string_type at value.0.title, and 17 more"
+    )
 
 
 @pytest.mark.anyio

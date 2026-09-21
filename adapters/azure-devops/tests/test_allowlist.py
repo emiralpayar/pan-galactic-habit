@@ -93,6 +93,12 @@ def test_a_method_override_header_is_rejected(header: str) -> None:
         _check(ALLOWED, headers={header: "PATCH"})
 
 
+def test_a_host_header_for_another_host_is_rejected() -> None:
+    # The connection goes to dev.azure.com, but a front end could route on the header.
+    with pytest.raises(RequestNotAllowedError, match="Host header"):
+        _check(ALLOWED, headers={"Host": "evil.test"})
+
+
 @pytest.mark.parametrize(
     "query",
     [
