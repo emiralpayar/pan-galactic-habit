@@ -1,0 +1,15 @@
+# Adapter-only lint rules on top of the workspace configuration. The allowlist is enforced
+# in an httpx transport, so anything that reaches the network another way would bypass it.
+# The import contract in the root pyproject.toml covers third-party clients; these cover
+# the standard library.
+
+extend = "../../pyproject.toml"
+
+[lint]
+extend-select = ["TID251"]
+
+[lint.flake8-tidy-imports.banned-api]
+"socket".msg = "Requests must go through the allowlisted httpx transport."
+"http.client".msg = "Requests must go through the allowlisted httpx transport."
+"urllib.request".msg = "Requests must go through the allowlisted httpx transport."
+"importlib.import_module".msg = "Dynamic imports would bypass the import contracts."

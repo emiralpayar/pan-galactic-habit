@@ -10,7 +10,7 @@ The deterministic (non-LLM) engine that gates every write to an external system 
 - Validate each proposed write **as the complete request** the adapter built (target, parameters, and every payload operation and field), not by tool name. Non-mutating preconditions (e.g. a JSON Patch `test`) are allowed; operations that copy from another path (e.g. `move`, `copy`) are rejected.
 - Enforce budgets per call, per session, and per time window.
 - Produce the diff preview for Write Confirmation, and re-validate at execution time.
-- Execute approved writes through the adapter.
+- Execute approved writes through the adapter. The engine is handed the adapter's write executor (an import contract stops it from importing an adapter), so it stays system-agnostic.
 - Emit an audit record for every executed and rejected write.
 
 ## Invariants

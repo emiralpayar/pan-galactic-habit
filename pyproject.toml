@@ -5,10 +5,13 @@
 required-version = ">=0.12.15,<0.13"
 
 [tool.uv.workspace]
-members = ["safety-layer/core"]
+members = ["adapters/azure-devops", "safety-layer/core"]
 
 [dependency-groups]
 dev = [
+    # anyio's pytest plugin runs the adapter's async tests; it arrives transitively through
+    # httpx, but the suite would fail on an unknown marker if that ever changed.
+    "anyio==4.12.0",
     "import-linter==2.15",
     "mypy==2.3.1",
     "pytest==9.1.1",
@@ -26,23 +29,34 @@ include = ["*.py", "*.pyi", "**/pyproject.toml"]
 select = ["E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "PT", "RUF", "S"]
 
 [tool.ruff.lint.per-file-ignores]
+# S101: tests assert.
 "**/tests/**" = ["S101"]
+# S105/S106: these two files build a config with an obviously fake token. The rule stays on
+# everywhere else, because it is the only automated check against a committed credential.
+"adapters/azure-devops/tests/test_allowlist.py" = ["S101", "S106"]
+"adapters/azure-devops/tests/test_reads.py" = ["S101", "S106"]
 
 [tool.mypy]
 python_version = "3.13"
 strict = true
 explicit_package_bases = true
-mypy_path = ["safety-layer/core/src"]
-files = ["tests", "safety-layer/core/src", "safety-layer/core/tests"]
+mypy_path = ["adapters/azure-devops/src", "safety-layer/core/src"]
+files = [
+    "tests",
+    "adapters/azure-devops/src",
+    "adapters/azure-devops/tests",
+    "safety-layer/core/src",
+    "safety-layer/core/tests",
+]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "safety-layer/core/tests"]
+testpaths = ["tests", "adapters/azure-devops/tests", "safety-layer/core/tests"]
 addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib", "-ra"]
 xfail_strict = true
 filterwarnings = ["error"]
 
 [tool.importlinter]
-root_packages = ["safety_layer"]
+root_packages = ["azure_devops", "safety_layer"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
@@ -54,10 +68,29 @@ source_modules = ["safety_layer"]
 forbidden_modules = [
     "aiohttp",
     "anthropic",
+    "azure_devops",
     "claude_agent_sdk",
     "copilot",
     "httpcore",
     "httpx",
+    "mcp",
+    "openai",
+    "requests",
+    "urllib3",
+]
+
+[[tool.importlinter.contracts]]
+# The adapter's allowlist is enforced in an httpx transport, so another HTTP client would
+# reach Azure DevOps without passing it. `httpcore` is absent on purpose: httpx uses it.
+# The adapter also makes no model calls; it translates requests and nothing more.
+name = "The Azure DevOps adapter imports no other HTTP client, agent SDK, or LLM client"
+type = "forbidden"
+source_modules = ["azure_devops"]
+forbidden_modules = [
+    "aiohttp",
+    "anthropic",
+    "claude_agent_sdk",
+    "copilot",
     "mcp",
     "openai",
     "requests",

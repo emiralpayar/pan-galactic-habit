@@ -23,4 +23,4 @@ An adapter is the system-specific integration layer between habits and one exter
 
 | Adapter | System | Integration | Status |
 |---|---|---|---|
-| [azure-devops](azure-devops/) | Azure DevOps | REST API, pinned `api-version` ([ADR 0005](../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)) | Not started (Phase 1) |
+| [azure-devops](azure-devops/) | Azure DevOps | REST API, pinned `api-version` ([ADR 0005](../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)) | In progress (Phase 1): work item reads |

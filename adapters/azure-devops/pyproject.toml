@@ -1,0 +1,13 @@
+[project]
+name = "azure-devops"
+version = "0.0.0"
+description = "Allowlisted integration with the Azure DevOps REST API."
+requires-python = ">=3.13"
+dependencies = [
+    "httpx==0.28.1",
+    "pydantic==2.13.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13"]
+build-backend = "uv_build"
