@@ -8,6 +8,7 @@ whose effective tool list cannot be read is not enabled.
 
 import os
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 from claude_agent_sdk import (
@@ -26,7 +27,7 @@ from agent_runtime import (
     ToolSurface,
     ToolSurfaceError,
 )
-from agent_runtime.claude import _check_tools
+from agent_runtime.claude import _check_init, build_environment
 
 
 class ItemId(BaseModel):
@@ -67,13 +68,14 @@ async def test_the_model_is_offered_exactly_the_tool_surface(
 
 
 @pytest.mark.anyio
-async def test_the_probe_can_see_built_in_tools_when_they_are_enabled() -> None:
+async def test_the_probe_can_see_built_in_tools_when_they_are_enabled(tmp_path: Path) -> None:
     """Guards the guard: with built-ins enabled the report must contain them."""
     options = ClaudeAgentOptions(
         tools={"type": "preset", "preset": "claude_code"},
         mcp_servers={"habit": create_sdk_mcp_server("habit", tools=[])},
         setting_sources=[],
-        env={"CLAUDE_CODE_OAUTH_TOKEN": "", "ANTHROPIC_API_KEY": "", "PATH": os.environ["PATH"]},
+        permission_mode="dontAsk",
+        env=build_environment(os.environ, ClaudeConfig(model="claude-sonnet-5"), Path(tmp_path)),
     )
     async with ClaudeSDKClient(options) as client:
         await client.query("ping")
@@ -85,20 +87,38 @@ async def test_the_probe_can_see_built_in_tools_when_they_are_enabled() -> None:
     pytest.fail("No init message.")
 
 
-def _init(tools: list[str]) -> SystemMessage:
-    return SystemMessage(subtype="init", data={"tools": tools})
+def _init(tools: list[str], servers: list[str] | None = None) -> SystemMessage:
+    names = ["habit"] if servers is None else servers
+    return SystemMessage(
+        subtype="init",
+        data={"tools": tools, "mcp_servers": [{"name": n, "source": "sdk"} for n in names]},
+    )
 
 
 def test_an_extra_tool_is_rejected(surface: ToolSurface) -> None:
-    with pytest.raises(ToolSurfaceError, match="extra: Bash"):
-        _check_tools(_init(["mcp__habit__get_item", "Bash"]), surface)
+    with pytest.raises(ToolSurfaceError, match="extra: unmapped:Bash"):
+        _check_init(_init(["mcp__habit__get_item", "Bash"]), surface)
 
 
 def test_a_missing_tool_is_rejected(surface: ToolSurface) -> None:
-    with pytest.raises(ToolSurfaceError, match="missing: mcp__habit__get_item"):
-        _check_tools(_init([]), surface)
+    with pytest.raises(ToolSurfaceError, match="missing: get_item"):
+        _check_init(_init([]), surface)
 
 
 def test_a_server_the_surface_did_not_register_is_rejected(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError):
-        _check_tools(_init(["mcp__habit__get_item", "mcp__other__write"]), surface)
+        _check_init(_init(["mcp__habit__get_item", "mcp__other__write"]), surface)
+
+
+def test_a_tool_without_the_prefix_never_matches_a_surface_name(surface: ToolSurface) -> None:
+    with pytest.raises(ToolSurfaceError, match="unmapped:get_item"):
+        _check_init(_init(["get_item"]), surface)
+
+
+def test_an_extra_mcp_server_is_rejected(surface: ToolSurface) -> None:
+    with pytest.raises(ToolSurfaceError, match="MCP servers"):
+        _check_init(_init(["mcp__habit__get_item"], servers=["habit", "connector"]), surface)
+
+
+def test_an_exact_match_passes(surface: ToolSurface) -> None:
+    assert _check_init(_init(["mcp__habit__get_item"]), surface) == surface.names

@@ -38,3 +38,4 @@ Easily reversible choices local to one component don't need an ADR; a good PR de
 | [0006](0006-rename-lobe-to-habit.md) | Rename "lobe" to "habit" | Proposed |
 | [0007](0007-orchestrator-opens-habit-request-issues-not-prs.md) | Orchestrator opens habit-request issues, not PRs | Proposed |
 | [0008](0008-sqlite-operational-store-and-a-service-account-per-system.md) | SQLite Operational Store and a service account per system | Accepted |
+| [0009](0009-claude-backend-refuses-and-neutralizes-inherited-environment.md) | Claude backend refuses and neutralizes inherited environment | Accepted |

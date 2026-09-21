@@ -34,20 +34,33 @@ from agent_runtime.tools import Tool, ToolSurface, ToolSurfaceError
 SERVER_NAME = "habit"
 _PREFIX = f"mcp__{SERVER_NAME}__"
 
-# The two credentials this backend supports. Exactly one may be set (ADR 0004).
+# The two credentials this backend supports. Exactly one may be set (ADR 0009).
 _CREDENTIALS = ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY")
-# Other ways of authenticating or of redirecting the CLI. This backend supports none of
-# them: refuse to start if the parent has one set, and neutralize it in the child.
-_UNSUPPORTED = (
-    "ANTHROPIC_AUTH_TOKEN",
-    "ANTHROPIC_FOUNDRY_API_KEY",
-    "CLAUDE_CODE_USE_BEDROCK",
-    "CLAUDE_CODE_USE_VERTEX",
-    "CLAUDE_CODE_USE_FOUNDRY",
-)
 _BASE_URL = "ANTHROPIC_BASE_URL"
-# Never set this: it would let a session skip the SDK's CLI version check.
-_FORBIDDEN = ("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK",)
+# Any other ANTHROPIC_* variable is refused: it can select another account or model, add
+# headers, or redirect traffic. So are the exact names below, which change how the CLI
+# authenticates, where its traffic goes, or what code it loads.
+_REFUSED_PREFIX = "ANTHROPIC_"
+_REFUSED = (
+    "CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK",
+    "CLAUDE_CODE_CLIENT_CERT",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_FOUNDRY",
+    "CLAUDE_CODE_USE_MANTLE",
+    "CLAUDE_CODE_USE_VERTEX",
+    "DYLD_INSERT_LIBRARIES",
+    "LD_PRELOAD",
+    "NODE_EXTRA_CA_CERTS",
+    "NODE_OPTIONS",
+    "ALL_PROXY",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "all_proxy",
+    "http_proxy",
+    "https_proxy",
+)
+# Overridden with an empty value in the child, so an unlisted one cannot slip through.
+_NEUTRALIZED = (*_CREDENTIALS, _BASE_URL, "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_MODEL")
 
 
 class CredentialError(RuntimeError):
@@ -60,7 +73,6 @@ class ClaudeConfig:
 
     model: str
     base_url: str | None = None
-    cli_path: Path | None = None
 
 
 def build_environment(
@@ -69,27 +81,36 @@ def build_environment(
     """Return the variables to hand the CLI, or raise CredentialError.
 
     The SDK merges these on top of the parent's environment and cannot remove anything from
-    it. So every variable that could change which account or endpoint the CLI uses is
-    either refused (when the parent sets it) or overridden here, and the CLI reads its
-    settings from an empty directory instead of the user's own.
+    it (ADR 0009). So every variable that could change which account, model, or endpoint
+    the CLI uses is refused when the parent sets it, and the common ones are also
+    overridden here. The CLI reads its settings from an empty directory, not the user's.
     """
     present = [name for name in _CREDENTIALS if parent.get(name)]
     if len(present) > 1:
         raise CredentialError(f"Set exactly one Claude credential; found {', '.join(present)}.")
-    unsupported = [name for name in _UNSUPPORTED + _FORBIDDEN if parent.get(name)]
-    if unsupported:
-        raise CredentialError(f"Unsupported variables are set: {', '.join(unsupported)}.")
+    refused = sorted(
+        name
+        for name, value in parent.items()
+        if value
+        and name not in _CREDENTIALS
+        and name != _BASE_URL
+        and (name.startswith(_REFUSED_PREFIX) or name in _REFUSED)
+    )
+    if refused:
+        raise CredentialError(f"Unsupported variables are set: {', '.join(refused)}.")
     inherited_url = parent.get(_BASE_URL)
     if inherited_url and inherited_url != config.base_url:
         raise CredentialError(
             f"{_BASE_URL} is set but the committed configuration does not name it."
         )
 
-    environment = dict.fromkeys((*_CREDENTIALS, *_UNSUPPORTED, _BASE_URL), "")
+    environment = dict.fromkeys(_NEUTRALIZED, "")
     environment.update({name: parent[name] for name in present})
     if config.base_url:
         environment[_BASE_URL] = config.base_url
     environment["CLAUDE_CONFIG_DIR"] = str(config_dir)
+    # The CLI must not replace itself: a session runs exactly what the SDK pin installed.
+    environment["DISABLE_AUTOUPDATER"] = "1"
     return environment
 
 
@@ -122,24 +143,39 @@ def _options(
         mcp_servers={SERVER_NAME: _build_server(request.tool_surface)},
         system_prompt=request.instructions,
         model=config.model,
-        cli_path=config.cli_path,
         cwd=work_dir,
         env=environment,
     )
 
 
-def _check_tools(init: SystemMessage, tool_surface: ToolSurface) -> frozenset[str]:
-    """Return the offered tools by Tool Surface name; raise if they differ from the surface."""
-    offered = frozenset(init.data.get("tools", []))
-    expected = frozenset(_PREFIX + name for name in tool_surface.names)
-    if offered != expected:
-        extra = ", ".join(sorted(offered - expected)) or "none"
-        missing = ", ".join(sorted(expected - offered)) or "none"
+def _offered(init: SystemMessage) -> frozenset[str]:
+    """The tools the model is offered, by Tool Surface name.
+
+    A name that does not carry this backend's prefix is returned marked as unmapped, so it
+    can never compare equal to a Tool Surface name.
+    """
+    return frozenset(
+        name.removeprefix(_PREFIX) if name.startswith(_PREFIX) else f"unmapped:{name}"
+        for name in init.data.get("tools", [])
+    )
+
+
+def _check_init(init: SystemMessage, tool_surface: ToolSurface) -> frozenset[str]:
+    """Return the offered tools; raise if they, or the MCP servers, differ from the surface."""
+    offered = _offered(init)
+    if offered != tool_surface.names:
+        extra = ", ".join(sorted(offered - tool_surface.names)) or "none"
+        missing = ", ".join(sorted(tool_surface.names - offered)) or "none"
         raise ToolSurfaceError(
             f"The model would be offered tools that differ from the Tool Surface "
             f"(extra: {extra}; missing: {missing})."
         )
-    return frozenset(name.removeprefix(_PREFIX) for name in offered)
+    servers = [
+        (server.get("name"), server.get("source")) for server in init.data.get("mcp_servers", [])
+    ]
+    if servers != [(SERVER_NAME, "sdk")]:
+        raise ToolSurfaceError(f"Unexpected MCP servers in the session: {servers}.")
+    return offered
 
 
 @asynccontextmanager
@@ -157,26 +193,38 @@ class ClaudeRuntime:
         self._config = config
 
     async def run(self, request: SessionRequest) -> AsyncIterator[SessionEvent]:
+        surface = request.tool_surface
         async with _client(request, self._config) as client:
             await client.query(request.prompt)
             verified = False
             async for message in client.receive_response():
                 if isinstance(message, SystemMessage) and message.subtype == "init":
-                    _check_tools(message, request.tool_surface)
+                    _check_init(message, surface)
                     verified = True
                 elif not verified:
-                    # Nothing may happen before the tool list has been checked.
+                    # Nothing may be used before the tool list has been checked.
                     raise ToolSurfaceError("The session did not report its tools first.")
                 elif isinstance(message, AssistantMessage):
                     for block in message.content:
                         if isinstance(block, TextBlock):
                             yield AssistantText(block.text)
                         elif isinstance(block, ToolUseBlock):
-                            yield ToolCalled(block.name.removeprefix(_PREFIX), block.input)
+                            name = block.name.removeprefix(_PREFIX)
+                            if not block.name.startswith(_PREFIX) or surface.get(name) is None:
+                                raise ToolSurfaceError(f"The model called {block.name!r}.")
+                            yield ToolCalled(name, block.input)
                 elif isinstance(message, ResultMessage):
                     yield SessionEnded(is_error=message.is_error)
+            if not verified:
+                raise ToolSurfaceError("The session ended without reporting its tools.")
 
     async def effective_tools(self, tool_surface: ToolSurface) -> frozenset[str]:
+        """Report the tools the CLI offers the model.
+
+        The CLI reports them in its init message, which it sends after the first prompt is
+        submitted, so with a credential set a model call may already have started when this
+        interrupts. The contract test runs without a credential.
+        """
         request = SessionRequest(
             instructions="Reply with one word.", tool_surface=tool_surface, prompt="ping"
         )
@@ -184,7 +232,6 @@ class ClaudeRuntime:
             await client.query(request.prompt)
             async for message in client.receive_messages():
                 if isinstance(message, SystemMessage) and message.subtype == "init":
-                    offered = frozenset(message.data.get("tools", []))
                     await client.interrupt()
-                    return frozenset(name.removeprefix(_PREFIX) for name in offered)
+                    return _offered(message)
         raise ToolSurfaceError("The session ended without reporting its tools.")

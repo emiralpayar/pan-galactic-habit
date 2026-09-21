@@ -37,6 +37,15 @@ async def test_invalid_arguments_are_an_error_and_do_not_run_the_handler() -> No
     assert text.startswith("Invalid arguments for get_item")
 
 
+@pytest.mark.anyio
+async def test_a_failing_handler_is_an_error_without_details() -> None:
+    async def fail(arguments: ItemId) -> str:
+        raise RuntimeError("secret detail")
+
+    broken = Tool("get_item", "d", ItemId, fail)
+    assert await broken.call({"id": 1}) == ("The get_item tool failed.", True)
+
+
 @pytest.mark.parametrize("name", ["Get", "get-item", "1item", "", "a" * 65, "mcp__x__y"])
 def test_tool_names_are_restricted(name: str) -> None:
     with pytest.raises(ToolSurfaceError):

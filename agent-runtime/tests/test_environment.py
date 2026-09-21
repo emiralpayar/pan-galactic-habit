@@ -32,6 +32,13 @@ def test_two_credentials_are_refused() -> None:
     "name",
     [
         "ANTHROPIC_AUTH_TOKEN",
+        "ANTHROPIC_MODEL",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL",
+        "ANTHROPIC_CUSTOM_HEADERS",
+        "ANTHROPIC_BEDROCK_BASE_URL",
+        "HTTPS_PROXY",
+        "NODE_OPTIONS",
+        "LD_PRELOAD",
         "CLAUDE_CODE_USE_BEDROCK",
         "CLAUDE_CODE_USE_VERTEX",
         "CLAUDE_CODE_USE_FOUNDRY",
@@ -57,3 +64,11 @@ def test_an_endpoint_override_named_by_configuration_is_used() -> None:
 def test_a_configured_endpoint_replaces_nothing_when_the_parent_sets_none() -> None:
     config = ClaudeConfig(model="m", base_url="https://proxy.example")
     assert build_environment({}, config, CONFIG_DIR)["ANTHROPIC_BASE_URL"] == config.base_url
+
+
+def test_the_cli_is_kept_from_updating_itself() -> None:
+    assert build_environment({}, CONFIG, CONFIG_DIR)["DISABLE_AUTOUPDATER"] == "1"
+
+
+def test_empty_values_are_ignored() -> None:
+    assert build_environment({"ANTHROPIC_MODEL": "", "HTTPS_PROXY": ""}, CONFIG, CONFIG_DIR)

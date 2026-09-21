@@ -115,9 +115,11 @@ type = "forbidden"
 source_modules = ["agent_runtime"]
 forbidden_modules = [
     "aiohttp",
+    "anthropic",
     "azure_devops",
     "httpcore",
     "httpx",
+    "mcp",
     "requests",
     "safety_layer",
     "urllib3",

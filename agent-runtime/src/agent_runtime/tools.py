@@ -45,7 +45,11 @@ class Tool:
             parsed = self.input_model.model_validate(arguments)
         except ValidationError as error:
             return f"Invalid arguments for {self.name}: {error}", True
-        return await self.handler(parsed), False
+        try:
+            return await self.handler(parsed), False
+        except Exception:
+            # Details could carry data the model must not act on; the caller sees a failure.
+            return f"The {self.name} tool failed.", True
 
 
 @dataclass(frozen=True)
