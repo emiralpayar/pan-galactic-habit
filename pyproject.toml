@@ -68,6 +68,10 @@ include_external_packages = true
 
 [[tool.importlinter.contracts]]
 # Safety Layer invariant 1: decisions are deterministic code, never an LLM or a network call.
+# Forbidden third-party packages here catch only a direct `import <name>` from our own
+# source. import-linter (via grimp) puts each external package in the graph as one opaque
+# node and does not parse its internal source, so a package a listed one depends on
+# internally (e.g. claude-agent-sdk's own use of `mcp`) is not traced and is not caught here.
 name = "The Safety Layer imports no agent SDK, LLM client, or HTTP client"
 type = "forbidden"
 source_modules = ["safety_layer"]
@@ -110,6 +114,10 @@ forbidden_modules = [
 # Only the Agent Runtime imports an agent SDK (ADR 0004): its backends configure the SDK so
 # the model sees the Tool Surface and nothing else. It stays independent of what the tools
 # do, so it imports no adapter and no Safety Layer code, and it makes no direct HTTP calls.
+# `mcp` and `anthropic` are listed for the same reason as in the Safety Layer's contract
+# above: they catch a direct import from this package's own source, not claude-agent-sdk's
+# internal use of `mcp` (see the comment there) — the SDK confinement itself is structural
+# (this is the only package allowed to import it), not from this forbidden-modules list.
 name = "The Agent Runtime imports no adapter, Safety Layer code, or HTTP client"
 type = "forbidden"
 source_modules = ["agent_runtime"]

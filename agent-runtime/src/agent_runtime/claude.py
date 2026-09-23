@@ -219,12 +219,18 @@ class ClaudeRuntime:
                 raise ToolSurfaceError("The session ended without reporting its tools.")
 
     async def effective_tools(self, tool_surface: ToolSurface) -> frozenset[str]:
-        """Report the tools the CLI offers the model.
+        """Report the tools the CLI offers the model, without calling the model.
 
-        The CLI reports them in its init message, which it sends after the first prompt is
-        submitted, so with a credential set a model call may already have started when this
-        interrupts. The contract test runs without a credential.
+        The CLI reports them in its init message, sent right after the first prompt is
+        submitted and before the model turns it into a call. A credential would let that
+        turn start for real before this interrupts, so this refuses to run with one set;
+        callers that need a credential (a live session) use `run` instead.
         """
+        if any(name in os.environ for name in _CREDENTIALS):
+            raise CredentialError(
+                "effective_tools must not be called with a Claude credential set; "
+                "it never calls the model."
+            )
         request = SessionRequest(
             instructions="Reply with one word.", tool_surface=tool_surface, prompt="ping"
         )

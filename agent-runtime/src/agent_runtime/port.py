@@ -46,6 +46,7 @@ class AgentRuntime(Protocol):
 
     async def effective_tools(self, tool_surface: ToolSurface) -> frozenset[str]:
         """Start a session with the production configuration and report the tools the model
-        is offered, by Tool Surface name. The Tool Surface contract test compares this with
-        the Tool Surface itself."""
+        is offered, by Tool Surface name, without calling the model. The Tool Surface
+        contract test compares this with the Tool Surface itself. A backend must refuse to
+        run this with a credential set, since its only job is the credential-less check."""
         ...

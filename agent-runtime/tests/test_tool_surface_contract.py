@@ -23,6 +23,7 @@ from agent_runtime import (
     AgentRuntime,
     ClaudeConfig,
     ClaudeRuntime,
+    CredentialError,
     Tool,
     ToolSurface,
     ToolSurfaceError,
@@ -57,6 +58,15 @@ BACKENDS: dict[str, Callable[[], AgentRuntime]] = {
 def _no_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"):
         monkeypatch.delenv(name, raising=False)
+
+
+@pytest.mark.anyio
+async def test_effective_tools_refuses_a_credential(
+    surface: ToolSurface, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "tok")
+    with pytest.raises(CredentialError, match="never calls the model"):
+        await ClaudeRuntime(ClaudeConfig(model="claude-sonnet-5")).effective_tools(surface)
 
 
 @pytest.mark.anyio
