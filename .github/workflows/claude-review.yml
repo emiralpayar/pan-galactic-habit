@@ -41,7 +41,7 @@ jobs:
 
       - name: Review
         # Pinned to a commit, not the moving v1 tag, because this step receives the OAuth secret.
-        uses: anthropics/claude-code-action@7b0b255830a1fab6e602658672acad11c12d841d # v1
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
