@@ -18,11 +18,14 @@ The same implementation work also settled a question ADR 0004 left open: the CLI
 
 We will keep the intent of ADR 0004 (a session uses only the credential and endpoint that committed configuration and the person running it chose) and implement it as refuse and neutralize:
 
-- **Refuse to start** when the parent environment holds more than one Claude credential, any other `ANTHROPIC_*` variable, an `ANTHROPIC_BASE_URL` that configuration does not name, or one of a named list of variables (provider switches, proxy and certificate settings, loader variables, the SDK's version-check bypass).
+- **Refuse to start** when the parent environment holds more than one Claude credential, an `ANTHROPIC_BASE_URL` that configuration does not name, or a variable that matches one of:
+  - a refused prefix (`ANTHROPIC_`, `BUN_`, `SSL_CERT_`, `CLAUDE_CODE_USE_`) — covers the SDK's own settings, the Bun runtime the CLI binary is built on, TLS trust, and every provider/gateway switch without naming each one;
+  - a `CLAUDE_CODE_*` name containing `TOKEN`, `KEY`, `CRED`, `PROXY`, `CERT`, `BASE_URL`, or `OAUTH_URL` — covers the CLI's own credential, proxy, certificate, and endpoint variables, found by reading the pinned CLI binary rather than its (undocumented) source;
+  - a short named list for everything else that changes what the CLI loads or trusts (loader variables, `NODE_TLS_REJECT_UNAUTHORIZED`, the SDK's version-check bypass).
 - **Neutralize** what the backend does not use by overriding it with an empty value in the environment it passes, and point the CLI at an empty settings directory and turn its self-update off.
-- **Read the tool list from the `init` message.** The Tool Surface contract test and every session compare it with the Tool Surface exactly, and compare the reported MCP servers with the one in-process server.
+- **Read the tool list from the `init` message.** The Tool Surface contract test and every session compare it with the Tool Surface exactly, compare the reported MCP servers with the one in-process server, and compare the reported `apiKeySource` with the credential the backend actually handed the CLI (or `"none"`).
 
-The list of refused names is a deny-list, so it has to grow when the SDK or CLI gains a new way to redirect a session.
+The refused prefixes, substrings, and named list are a deny-list, so they have to grow when the SDK or CLI gains a new way to redirect a session.
 A change to the SDK pin is therefore reviewed for new such variables, as it already is for the contract test.
 
 ## Consequences
@@ -30,6 +33,7 @@ A change to the SDK pin is therefore reviewed for new such variables, as it alre
 - A developer or runner with a proxy, model override, or provider switch set gets a clear refusal instead of a silently different session. Committed configuration can name a permitted value later.
 - Variables that are not listed still reach the CLI process. With `tools=[]` the model cannot use them (for example `GITHUB_TOKEN` or `AZURE_DEVOPS_PAT`), so the exposure is limited to the CLI process itself.
 - Whether the CLI treats an empty value as unset is assumed, not tested.
+- The `apiKeySource` the CLI reports for `ANTHROPIC_API_KEY` and for no credential is confirmed against the pinned binary; the value for a real `CLAUDE_CODE_OAUTH_TOKEN` is not yet, since that needs a real token. If it turns out not to equal the variable name, every OAuth session fails closed at the `_check_init` comparison rather than silently, so this is safe to leave open, not something that must block a merge on its own.
 - A true explicit environment needs a custom transport or a launcher for the CLI; revisit that if the SDK adds support or the deny-list proves hard to maintain.
 - The Copilot backend has to make the same decision for its SDK.
 

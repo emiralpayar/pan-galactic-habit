@@ -46,7 +46,7 @@ _REFUSED_PREFIXES = ("ANTHROPIC_", "BUN_", "SSL_CERT_", "CLAUDE_CODE_USE_")
 # A CLAUDE_CODE_* variable containing any of these substrings is refused: each names a
 # class of thing (a token, a key, another credential, a proxy, a certificate, or an
 # endpoint) that could change which account, model, or endpoint the CLI uses.
-_REFUSED_SUBSTRINGS = ("TOKEN", "KEY", "CRED", "PROXY", "CERT", "BASE_URL")
+_REFUSED_SUBSTRINGS = ("TOKEN", "KEY", "CRED", "PROXY", "CERT", "BASE_URL", "OAUTH_URL")
 _REFUSED = (
     "CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK",
     "DYLD_INSERT_LIBRARIES",
@@ -155,8 +155,12 @@ def _options(
 def _expected_api_key_source(environment: Mapping[str, str]) -> str:
     """The `apiKeySource` the CLI's init message must report for this environment.
 
-    The CLI names the credential variable it picked, or "none" when it picked none —
-    confirmed against the pinned CLI binary, not documented by the SDK.
+    The CLI names the credential variable it picked, or "none" when it picked none — this is
+    confirmed against the pinned CLI binary for ANTHROPIC_API_KEY and for no credential, not
+    documented by the SDK. It is not yet confirmed for a real CLAUDE_CODE_OAUTH_TOKEN (a fake
+    token reports "none", which this function cannot distinguish from a genuine mismatch); if
+    the real value differs, an OAuth session fails closed here rather than silently, so this
+    is a known gap, not a live bug (ADR 0009).
     """
     return next((name for name in _CREDENTIALS if environment.get(name)), "none")
 

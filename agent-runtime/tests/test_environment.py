@@ -59,6 +59,7 @@ def test_two_credentials_are_refused() -> None:
         "CLAUDE_CODE_HOST_CREDS_FILE",
         "CLAUDE_CODE_CLIENT_CERT",
         "CLAUDE_CODE_HTTP_PROXY",
+        "CLAUDE_CODE_CUSTOM_OAUTH_URL",
         "SSL_CERT_FILE",
         "SSL_CERT_DIR",
         "CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK",
