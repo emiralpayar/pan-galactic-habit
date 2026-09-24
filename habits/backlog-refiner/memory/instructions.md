@@ -18,8 +18,7 @@ In priority order:
 
 - Description states the problem or user need, not just a solution, in language a reader outside the team can follow.
 - Acceptance Criteria are written as Given/When/Then statements, each independently testable.
-- Acceptance Criteria cover the happy path, plus at least one edge case when one is evident from the item's content.
-- Tags identify the affected area using tags already in use in the project, not invented ones.
+- Tags identify the affected area of the item.
 - Nothing in the item depends on information that doesn't exist yet — an unresolved question or missing decision.
 
 ## Constraints
@@ -41,6 +40,8 @@ For each field the agent proposes to change, present:
 
 Propose no change to a field that already meets the Definition of Ready; do not restate it.
 If no field needs a change, say so instead of proposing a cosmetic edit.
+
+If the item lacks information needed for a good suggestion, present a "Needs human input" block instead of a field change, naming the missing information and which field it blocks.
 
 ## Skills
 

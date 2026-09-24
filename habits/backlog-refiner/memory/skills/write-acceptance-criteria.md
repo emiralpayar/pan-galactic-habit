@@ -9,7 +9,7 @@ Use when a work item has no Acceptance Criteria, or has criteria that are not in
 1. Read the work item's Description and any comments describing what "done" looks like.
 2. Write each criterion as a Given/When/Then statement: the starting state, the triggering action, the expected outcome.
 3. Cover the happy path first.
-4. Add an edge case only when the Description or comments make it evident; do not invent edge cases from nothing.
+4. Add an edge case when the Description or comments make one evident.
 5. Keep each criterion independent — a reader must be able to verify it without another criterion being true first, where the content allows it.
 
 ## Rules
@@ -23,7 +23,9 @@ Use when a work item has no Acceptance Criteria, or has criteria that are not in
 
 ### Good
 
-Given a user with items in their cart, when they select "checkout" with an expired payment method, then the checkout is blocked and an error names the payment method as the reason.
+Given a user with items in their cart, when they select "checkout" with an expired payment method, then the checkout is blocked.
+
+Given a user with items in their cart, when they select "checkout" with an expired payment method, then an error names the payment method as the reason.
 
 ### Bad
 

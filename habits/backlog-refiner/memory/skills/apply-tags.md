@@ -8,7 +8,7 @@ Use when a work item's Tags don't reflect its affected area, or a relevant tag a
 
 1. Read the work item's Description, Area Path, and existing Tags.
 2. List tags already used elsewhere in the project, from items read in the same session, that plausibly apply.
-3. Propose adding tags from that existing set only; do not invent a new tag name.
+3. Propose adding tags from that existing set only.
 4. Propose removing a tag only when it directly contradicts the item's current content, for example a tag naming a component the item no longer touches.
 
 ## Rules

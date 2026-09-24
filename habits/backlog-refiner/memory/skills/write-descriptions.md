@@ -16,14 +16,17 @@ Use when a work item's Description is missing, too short to convey the problem, 
 
 - State the problem before the solution.
 - Do not add a solution to an item that only stated the problem.
-- Do not invent details that are not present in the title, existing description, comments, or wiki page.
 - Keep the description short enough to render fully in a work item's summary view — aim for under 500 words.
 
 ## Examples
 
 ### Good
 
-Original: "Add retry to the sync job"
+Original title: "Add retry to the sync job"
+
+Original description: (empty)
+
+Comment: "Nightly sync failed again last night on a single dropped connection, we lost the whole day's data."
 
 Suggested: "The nightly sync job fails permanently on a single transient network error, losing a day of data. Add retry with backoff so a transient failure doesn't require a manual rerun."
 
