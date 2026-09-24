@@ -76,6 +76,7 @@ jobs:
           fi
           # Commits already on main were checked when they landed there, so a sync from
           # main into agent-main checks only its own commits.
+          git rev-parse --verify -q origin/main >/dev/null || { echo "::error::origin/main is missing"; exit 1; }
           status=0
           for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA" ^origin/main); do
             echo "::group::$(git log -1 --format='%h %s' "$sha")"

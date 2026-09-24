@@ -346,7 +346,7 @@ AI-generated code is welcome and held to exactly the same standard as human code
 ### Identities
 
 - **Claude Code sessions** run under the developer's own git and GitHub identity. The developer owns the PR and cannot approve it.
-- **Development loop sessions** ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) run under the maintainer's own account and start everything they write on GitHub with an author note. They work only on `agent-main`, where they approve and merge the other maintainer's session's PRs; the Claude Code hook stops them from approving or merging into `main`.
+- **Development loop sessions** ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) run under a per-maintainer agent account (a collaborator with write access, not a code owner) and start everything they write on GitHub with an author note. They work only on `agent-main`, where they approve and merge the other agent account's PRs; they can never satisfy `main`'s code owner review.
 - **Autonomous agents** (Orchestrator, Improver, habits) use their **own** GitHub bot identities and branch names under `agent/…`. They can open PRs, never approve or merge.
 - **The Claude GitHub app** (`@claude`) runs under its own bot identity when a collaborator mentions it on an issue, or a PR's author mentions it on that PR. It pushes to a `claude/…` branch or to that PR's branch; it never approves or merges. See [agentic development](docs/development/agentic-development.md#claude-on-github).
 

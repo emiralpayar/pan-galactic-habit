@@ -10,7 +10,7 @@
   - `open-pr` — run checks, push, and open a PR that follows the template.
   - `new-adr` — record an architecture decision.
   - `new-habit` — scaffold a habit following ARCHITECTURE.md §5.
-  - `agent-loop` — one iteration of the autonomous cross-review loop on `agent-main` (ADR 0010); run as `/loop /agent-loop` in a worktree of its own.
+  - `agent-loop` — one iteration of the autonomous cross-review loop on `agent-main` (ADR 0010); run as `/loop /agent-loop` under your agent account, in a worktree of its own.
 - **Subagents** (in `.claude/agents/`):
   - `safety-reviewer` — review any change that touches a safety-critical path before opening the PR.
   - `architecture-reviewer` — check a change against ARCHITECTURE.md principles.

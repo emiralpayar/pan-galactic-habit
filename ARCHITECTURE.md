@@ -224,13 +224,13 @@ Content read from external systems (work item descriptions, comments, wiki pages
 | Improver Agent | Read the Operational Store and eval results, push to non-main branches, open PRs | Approve or merge PRs, push to `main`, write to external systems |
 | Running habit | Read via its adapter; write via the Safety Layer after Write Confirmation; open self-proposal PRs | Modify its own memory or policy at runtime, access raw write tools, approve or merge PRs |
 | CI | Run tests and evals, build images, deploy | Approve or merge PRs |
-| Development loop session (a maintainer's Claude Code session on that maintainer's account, [ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) | Open issues; push branches; open PRs into `agent-main`, and approve and merge the other maintainer's session's PRs there | Approve or merge PRs into `main`, push to `main` or `agent-main`, change rulesets |
+| Development loop session (a maintainer's Claude Code session on that maintainer's agent account, [ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) | Open issues; push branches; open PRs into `agent-main`, and approve and merge the other agent account's PRs there | Approve or merge PRs into `main`, push to `main` or `agent-main`, change rulesets |
 | Human reviewer | Approve and merge PRs, including promotions from `agent-main` to `main` | — |
 
 **Enforcement:**
 
 - Branch protection on `main` requires at least one human approval; bot accounts are not eligible approvers, because they are not code owners and `main` requires a code owner's approval.
-- Development loop sessions run on the maintainers' own accounts, which are code owners. For `main`, what stops them is the Claude Code hook (in the repository and in each maintainer's user settings) and their instructions, not the ruleset ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
+- Development loop sessions run on per-maintainer agent accounts, which are not code owners, so they cannot approve into `main` either ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
 - `CODEOWNERS` assigns mandatory reviewers for safety-critical paths.
 - Each agent uses its own GitHub identity and token so every PR is attributable to its author.
 
@@ -307,7 +307,7 @@ The boundary check described in §4.2 is planned; it will be implemented with im
 10. **Azure DevOps integration.** The adapter calls the REST API directly; MCP servers remain an option for other adapters and are never exposed to agents ([ADR 0005](docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)).
 11. **Terminology: "habit," not "lobe."** A habit is a specialized behavior pattern learned and encoded over time, not a physical structure — the accurate counterpart to the earlier "lobe" naming ([ADR 0006](docs/adr/0006-rename-lobe-to-habit.md)).
 12. **Operational Store technology and write identity.** The Operational Store is SQLite behind a store port and fails closed; external writes use one least-privilege service account per system, with attribution in our audit records ([ADR 0008](docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md)).
-13. **Autonomous development loop.** The maintainers' Claude Code sessions run on the maintainers' own accounts, mark what they write with an author note, and cross-review, approve, and merge each other's PRs on an `agent-main` integration branch; `main` is unchanged and receives that work only through a human-reviewed promotion PR ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
+13. **Autonomous development loop.** The maintainers' Claude Code sessions run on per-maintainer agent accounts that are not code owners, mark what they write with an author note, and cross-review, approve, and merge each other's PRs on an `agent-main` integration branch; `main` is unchanged and receives that work only through a human-reviewed promotion PR ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
 
 ---
 

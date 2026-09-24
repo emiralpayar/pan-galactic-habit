@@ -5,7 +5,7 @@
 # (CONTRIBUTING.md#how-the-rules-are-enforced). Exit code 2 blocks the command
 # and shows the message to Claude.
 #
-# This is a guardrail, not a security boundary: the GitHub ruleset is the boundary.
+# This is a guardrail, not a security boundary: the GitHub rulesets are the boundary.
 
 set -uo pipefail
 export LC_ALL=C
@@ -120,16 +120,16 @@ fi
 
 # ── Merging and approving PRs ─────────────────────────────────────────────
 # Allowed only for a pull request into agent-main, the agent loop's integration
-# branch (ADR 0010). Into main, or whenever anything cannot be established, it
-# stays a human decision. The loop runs under the maintainers' own accounts, which
-# are code owners, so for main this hook is the control that stops a loop session
-# from approving or merging; keep a user-level copy of it (agentic-development.md).
+# branch, and only from a loop agent account (ADR 0010). Into main, from a code
+# owner's account, or whenever anything cannot be established, it stays a human
+# decision. The GitHub rulesets remain the boundary: a loop agent account is not a
+# code owner, so its approval can never satisfy main's code owner review.
 #
-# Any command that mentions a PR merge or approval, in any form (an env prefix,
-# `command gh`, an absolute path, a second line), must match this one exact
-# shape, or it is blocked.
+# Recognized forms (env prefixes, `command gh`, absolute paths, quoted or escaped
+# words, a second line) must match the one allowed shape, or they are blocked. A
+# script, curl, or another client can still reach the API; this is a guardrail.
 loop_merge_allowed() {
-  local verb="$1" rest selector option base
+  local verb="$1" rest selector option login owners base
   # One plain line: no line breaks, chaining, subshells, substitutions, quoting,
   # escapes, or globs whose effect the checks below would not see.
   case "$raw_cmd" in
@@ -137,13 +137,13 @@ loop_merge_allowed() {
   esac
   case "$cmd" in
     *';'* | *'&'* | *'|'* | *'('* | *')'* | *'`'* | *'$'* | *'<'* | *'>'* \
-      | *"'"* | *'"'* | *\\* | *'{'* | *'}'* | *'*'* | *'?'* | *'~'*) return 1 ;;
+      | *"'"* | *'"'* | *\\* | *'{'* | *'}'* | *'*'* | *'?'* | *'~'* | *'='*) return 1 ;;
   esac
   [[ "$cmd" =~ ^\ *gh\ pr\ ${verb}\ ([^ ]+)(.*)$ ]] || return 1
   selector="${BASH_REMATCH[1]}"
   rest="${BASH_REMATCH[2]}"
   [[ "$selector" =~ ^([0-9]+|https://github\.com/emiralpayar/pan-galactic-habit/pull/[0-9]+)$ ]] || return 1
-  # Only the options the loop needs; anything else (--admin, -R, --auto, ...) is refused.
+  # Only the options the loop needs; anything else (--admin, -R, --auto, -ab, ...) is refused.
   # Word splitting is intended here, and globs were refused above.
   # shellcheck disable=SC2086
   set -- $rest
@@ -159,30 +159,52 @@ loop_merge_allowed() {
       *) return 1 ;;
     esac
   done
+  # A code owner's approval counts on main; the loop runs only on agent accounts.
+  login="$(cd "$cwd" 2>/dev/null && gh api user --jq .login 2>/dev/null)" || return 1
+  [ -n "$login" ] || return 1
+  owners="$(git -C "$cwd" show origin/main:.github/CODEOWNERS 2>/dev/null)" || return 1
+  [ -n "$owners" ] || return 1
+  owners=" $(printf '%s' "$owners" | tr '[:upper:]' '[:lower:]' | tr '\n\t' '  ') "
+  [[ "$owners" == *" @$(printf '%s' "$login" | tr '[:upper:]' '[:lower:]') "* ]] && return 1
   base="$(cd "$cwd" 2>/dev/null && gh pr view "$selector" --json baseRefName --jq .baseRefName 2>/dev/null)" || return 1
   [ "$base" = "agent-main" ]
 }
 
-re_merge='(^|[^a-z0-9_-])pr merge( |$)'
-if [[ "$cmd" =~ $re_merge ]] && ! loop_merge_allowed merge; then
-  block "merging is allowed only for a pull request into agent-main, as a single plain command: gh pr merge <number> --squash (or --merge for a sync). Into main it is a human decision."
+# Detection runs on a copy without quotes and backslashes, so `"merge"`, `mer''ge`,
+# and `m\erge` are recognized; the allowed shape above refuses them anyway.
+norm="$(printf '%s' "$cmd" | tr -d "'\"\\\\")"
+w='(^|[^a-z0-9_-])'
+
+re_merge="${w}pr merge( |$)"
+if [[ "$norm" =~ $re_merge ]] && ! loop_merge_allowed merge; then
+  block "merging is allowed only from a loop agent account, for a pull request into agent-main, as a single plain command: gh pr merge <number> --squash (or --merge for a sync). Into main it is a human decision."
 fi
 
-re_approve='(^|[^a-z0-9_-])pr review .*(--approve|-a)( |$)'
-if [[ "$cmd" =~ $re_approve ]] && ! loop_merge_allowed review; then
-  block "approving is allowed only for a pull request into agent-main, as a single plain command: gh pr review <number> --approve --body-file <file>. For main it is a human decision."
+re_approve="${w}pr review .*( --approve([ =]|$)| -[A-Za-z]*a[A-Za-z]*( |$))"
+if [[ "$norm" =~ $re_approve ]] && ! loop_merge_allowed review; then
+  block "approving is allowed only from a loop agent account, for a pull request into agent-main, as a single plain command: gh pr review <number> --approve --body-file <file>. For main it is a human decision."
 fi
 
-# Retargeting a PR could carry an approval or a queued merge from agent-main to main.
-re='(^|[^a-z0-9_-])pr edit .*(--base|-B)([ =]|$)'
-if [[ "$cmd" =~ $re ]]; then
+# Retargeting a PR could carry an approval from agent-main to main.
+re="${w}pr edit .*( --base| -[A-Za-z]*B)"
+if [[ "$norm" =~ $re ]]; then
   block "changing a pull request's base branch is not allowed; open a new pull request instead."
 fi
 
 # The same operations through the API, which the checks above would not see.
-re='(^|[^a-z0-9_-])api .*(pulls/[^ ]+/merge|mergePullRequest|enablePullRequestAutoMerge|addPullRequestReview|submitPullRequestReview|/reviews.* (-X|--method|-f|-F|--field|--raw-field|--input)[ =]?)'
-if [[ "$cmd" =~ $re ]]; then
-  block "merging, reviewing, or queuing a merge through the API is not allowed; use gh pr merge or gh pr review."
+re="${w}api .*(pulls/[^ ]+/merge|mergePullRequest|enablePullRequestAutoMerge|addPullRequestReview|submitPullRequestReview|updatePullRequest)"
+re_pull="${w}api( .*)? [^ ]*pulls/[0-9]+(/reviews)?( |$)"
+re_write="${w}api( .*)? ((-X|--method)[ =]?(POST|PUT|PATCH)|(-f|-F|--field|--raw-field|--input)[ =]?)"
+re_graphql_file="${w}api graphql.*( (-F|--field) [a-z_]+=@| --input)"
+if [[ "$norm" =~ $re ]] || { [[ "$norm" =~ $re_pull ]] && [[ "$norm" =~ $re_write ]]; } \
+  || [[ "$norm" =~ $re_graphql_file ]]; then
+  block "changing, merging, or reviewing a pull request through the API is not allowed; use gh pr merge or gh pr review."
+fi
+
+# Ways to run gh commands the checks above would not recognize, or to take its token.
+re="${w}gh (alias (set|import)|extension (install|upgrade|create)|ext (install|upgrade|create)|auth token)( |$)"
+if [[ "$norm" =~ $re ]] || [[ "$norm" == *api.github.com* ]]; then
+  block "gh aliases, extensions, the raw token, and direct API URLs are not allowed; use gh pr and gh issue commands."
 fi
 
 # ── Repository protection ─────────────────────────────────────────────────
