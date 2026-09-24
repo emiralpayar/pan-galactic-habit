@@ -62,26 +62,28 @@ if [[ "$cmd" =~ $re ]]; then
   fi
 fi
 
-# ── Commits on main ───────────────────────────────────────────────────────
+# ── Commits on main and agent-main ────────────────────────────────────────
 re="${git_cmd} commit( |$)"
-if [[ "$cmd" =~ $re ]] && [ "$current_branch" = "main" ] && [ "$has_commits" = "yes" ]; then
-  block "you are on 'main'. Create a branch first: git switch -c <type>/<issue>-<short-description>"
+if [[ "$cmd" =~ $re ]] && [ "$has_commits" = "yes" ] \
+  && { [ "$current_branch" = "main" ] || [ "$current_branch" = "agent-main" ]; }; then
+  block "you are on '$current_branch'. Create a branch first: git switch -c <type>/<issue>-<short-description>"
 fi
 
 # ── Pushes ────────────────────────────────────────────────────────────────
 re="${git_cmd} push( |$)"
 if [[ "$cmd" =~ $re ]]; then
-  re_main="${git_cmd} push${seg}[ :/+]main([ ;&|]|$)"
+  re_main="${git_cmd} push${seg}([ :/+]|[ :/+]agent-)main([ ;&|]|$)"
   if [[ "$cmd" =~ $re_main ]]; then
-    block "pushing to 'main' is not allowed. Push your branch and open a pull request."
+    block "pushing to 'main' or 'agent-main' is not allowed. Push your branch and open a pull request."
   fi
 
   re_bare="${git_cmd} push( (-u|--set-upstream|origin))*( *$|[ ]*[;&|])"
   # "push ... HEAD" names no explicit branch either; it pushes whatever is
   # checked out, same as a bare push.
   re_head="${git_cmd} push( (-u|--set-upstream|origin))* HEAD([ ;&|]|$)"
-  if { [[ "$cmd" =~ $re_bare ]] || [[ "$cmd" =~ $re_head ]]; } && [ "$current_branch" = "main" ]; then
-    block "you are on 'main'; this push would push to main."
+  if { [[ "$cmd" =~ $re_bare ]] || [[ "$cmd" =~ $re_head ]]; } \
+    && { [ "$current_branch" = "main" ] || [ "$current_branch" = "agent-main" ]; }; then
+    block "you are on '$current_branch'; this push would push to $current_branch."
   fi
 
   re_force="${git_cmd} push${seg} (--force|-f)([ ;&|]|$)"
@@ -110,14 +112,36 @@ if [[ "$cmd" =~ $re ]]; then
 fi
 
 # ── Merging and approving PRs ─────────────────────────────────────────────
+# Allowed only for a pull request into agent-main, the agent loop's integration
+# branch (ADR 0010). Into main, and whenever the base cannot be established, it
+# stays a human decision. The GitHub rulesets remain the boundary: a loop bot's
+# approval can never satisfy main's code owner review.
+base_is_agent_main() {
+  local verb="$1" rest selector base
+  # One plain command only: no chaining, subshells, or substitutions whose effect
+  # the check below would not see.
+  case "$cmd" in
+    *';'* | *'&'* | *'|'* | *'('* | *')'* | *'`'* | *'$'* | *'<'* | *'>'*) return 1 ;;
+  esac
+  [[ "$cmd" =~ ^\ *gh\ pr\ ${verb}\ (.*)$ ]] || return 1
+  rest="${BASH_REMATCH[1]}"
+  # --admin bypasses branch protection; another repository is out of scope.
+  [[ " $rest " =~ \ (--admin|-R|--repo)([ =]) ]] && return 1
+  # The PR must be named by number or URL right after the verb.
+  selector="${rest%% *}"
+  [[ "$selector" =~ ^([0-9]+|https://github\.com/[^/]+/[^/]+/pull/[0-9]+)$ ]] || return 1
+  base="$(cd "$cwd" 2>/dev/null && gh pr view "$selector" --json baseRefName --jq .baseRefName 2>/dev/null)" || return 1
+  [ "$base" = "agent-main" ]
+}
+
 re="${b}gh pr merge( |$)"
-if [[ "$cmd" =~ $re ]]; then
-  block "merging pull requests is a human decision."
+if [[ "$cmd" =~ $re ]] && ! base_is_agent_main merge; then
+  block "merging is allowed only for a pull request into agent-main, named by number as a single command (gh pr merge <number> --squash); into main it is a human decision."
 fi
 
 re="${b}gh pr review${seg} (--approve|-a)([ ;&|]|$)"
-if [[ "$cmd" =~ $re ]]; then
-  block "approving pull requests is a human decision."
+if [[ "$cmd" =~ $re ]] && ! base_is_agent_main review; then
+  block "approving is allowed only for a pull request into agent-main, named by number as a single command (gh pr review <number> --approve --body-file <file>); for main it is a human decision."
 fi
 
 # ── Repository protection ─────────────────────────────────────────────────

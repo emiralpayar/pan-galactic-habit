@@ -7,6 +7,8 @@ description: Verify, push, and open a pull request that follows the repository's
 
 Never merge or approve. The job ends with a PR link handed to the user.
 
+**In the agent-main loop** (the `agent-loop` skill), the base is `agent-main`: read `agent-main` wherever a step below says `main`, open the PR ready for review (not a draft), and set AI involvement to `authored`, naming the maintainer who runs the session.
+
 ## Steps
 
 1. **Confirm you are not on `main`:** `git symbolic-ref --short HEAD`. Validate the name with `scripts/checks/branch-name.sh`.

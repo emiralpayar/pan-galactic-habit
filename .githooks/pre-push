@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Blocks pushes to main and pushes of branches that do not follow the naming conventions.
+# Blocks pushes to main and agent-main, and pushes of branches that do not follow the naming conventions.
 # Installed by `make setup`. The GitHub ruleset enforces the same on the server.
 
 set -euo pipefail
@@ -25,6 +25,18 @@ while read -r _local_ref local_sha remote_ref remote_sha; do
     gh pr create
 
   See CONTRIBUTING.md#workflow
+EOF
+      status=1
+      ;;
+    refs/heads/agent-main)
+      cat >&2 <<'EOF'
+✖ Pushing to agent-main is not allowed; it changes only through pull requests (ADR 0010).
+
+  Push your branch and open a pull request against agent-main instead:
+    git push -u origin HEAD
+    gh pr create --base agent-main
+
+  See docs/development/agentic-development.md#cross-review-loop-on-agent-main
 EOF
       status=1
       ;;

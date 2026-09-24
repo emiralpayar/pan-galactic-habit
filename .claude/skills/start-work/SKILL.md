@@ -7,6 +7,8 @@ description: Start work on a GitHub issue or task by syncing main and creating a
 
 Create a correctly named branch from an up-to-date `main`.
 
+**In the agent-main loop** (the `agent-loop` skill), branch from `origin/agent-main` instead, and claim the issue by assigning it to your bot account before creating the branch. There is no user to ask: if an issue is unclear, comment on it with the question and pick other work.
+
 ## Steps
 
 1. **Identify the issue.** If the user gave an issue number, read it with `gh issue view <number>`. If there is no issue and the change is non-trivial, ask whether to create one before continuing.
