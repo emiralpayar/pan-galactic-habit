@@ -20,7 +20,8 @@ In addition to the usual classes (secret exposure, injection, privilege escalati
 
 - Any way for a habit to **write to an external system without passing through the Safety Layer**, or to write something its Safety Policy does not allow.
 - Any way for **content read from an external system** (prompt injection) to cause writes beyond what the user confirmed.
-- Any way for an agent to **approve or merge a pull request**, or to change `main` without review.
+- Any way for an agent to **approve or merge a pull request into `main`**, or to change `main` without review.
+- Any way for a development loop session to **approve or merge into `main`**, to **merge into `agent-main` without the other maintainer's session's approval**, or to get past the guard hook's `agent-main` base check or the `protect-agent-main` ruleset ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
 - A Safety Layer path that **fails open**.
 - Exposure of **credentials** used by adapters, agents, or CI.
 

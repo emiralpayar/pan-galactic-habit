@@ -56,6 +56,10 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
         run: |
           if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
             # Dependabot's commits can't be reworded without breaking its updates, and they are
@@ -63,8 +67,17 @@ jobs:
             echo "::notice title=Commit messages not checked::Dependabot PR: commit messages are squashed; the PR title check covers the commit that lands on main."
             exit 0
           fi
+          # A promotion from agent-main carries squash commits that each passed this
+          # repository's PR title check when they landed on agent-main; GitHub's " (#NN)"
+          # suffix can push them past the length limit (ADR 0010).
+          if [ "$BASE_REF" = "main" ] && [ "$HEAD_REF" = "agent-main" ] && [ "$HEAD_REPO" = "$REPO" ]; then
+            echo "::notice title=Commit messages not checked::Promotion from agent-main: its commits were checked when they landed; the PR title check covers the commit that lands on main."
+            exit 0
+          fi
+          # Commits already on main were checked when they landed there, so a sync from
+          # main into agent-main checks only its own commits.
           status=0
-          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA" ^origin/main); do
             echo "::group::$(git log -1 --format='%h %s' "$sha")"
             git log -1 --format=%B "$sha" > "$RUNNER_TEMP/message"
             scripts/checks/commit-message.sh "$RUNNER_TEMP/message" || status=1

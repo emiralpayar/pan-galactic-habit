@@ -28,9 +28,9 @@ This document defines how every change reaches `main` — whether it is written 
 ## Ground rules
 
 - **`main` is protected.** No direct commits, no direct pushes, no force-pushes, no exceptions — administrators included.
-- **Every change is a pull request** that passes CI and is approved by at least one human who did not author it.
-- **Squash merge only.** One PR becomes one commit on `main`, and the PR title becomes its message.
-- **Bots and agents may open PRs; they may never approve or merge them into `main`.** The development loop's bots cross-review and merge each other's PRs only on the `agent-main` integration branch; a human promotes that work to `main` ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
+- **Every change is a pull request** that passes CI. A pull request into `main` is approved by at least one human who did not author it.
+- **Squash merge only** into `main`. One PR becomes one commit on `main`, and the PR title becomes its message. (A sync from `main` into `agent-main` uses a merge commit.)
+- **Bots and agents may open PRs; they may never approve or merge them into `main`.** Development loop sessions cross-review and merge each other's PRs only on the `agent-main` integration branch; a human promotes that work to `main` ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)).
 - **Small, focused PRs.** One concern per PR.
 - **Docs change with the code.** A PR that changes architecture updates ARCHITECTURE.md in the same PR.
 
@@ -75,7 +75,7 @@ issue ──► branch from main ──► commits ──► push ──► draf
 7. **Address review feedback** with new commits (they are squashed on merge, so no need to rewrite history during review).
 8. **A reviewer approves; the author (or a reviewer) squash-merges.** The branch is deleted automatically.
 
-Branches should live **less than a week**. If work is bigger, split it — use feature flags or incomplete-but-inert code rather than long-lived branches.
+Branches should live **less than a week**. If work is bigger, split it — use feature flags or incomplete-but-inert code rather than long-lived branches. The one long-lived branch is `agent-main`, the development loop's integration branch ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)); loop work follows the same flow with `agent-main` in place of `main`.
 
 ---
 
@@ -260,7 +260,7 @@ Use the PR template. Every PR must include:
 - At least **one approval** from someone other than the author is required.
 - **Code owners** (`.github/CODEOWNERS`) must approve changes to paths they own.
 - Approvals are dismissed when new commits are pushed, and the most recent push must be approved by someone other than its pusher.
-- **Bots and agents cannot approve a PR into `main`.** (On `agent-main`, the loop's bots approve each other's PRs; see [agentic development](docs/development/agentic-development.md#cross-review-loop-on-agent-main).) A PR into `main` authored by an agent needs a human approval; a PR authored by a human in a Claude Code session is still that human's PR and needs a *different* human to approve.
+- **Bots and agents cannot approve a PR into `main`.** (On `agent-main`, loop sessions approve each other's PRs; see [agentic development](docs/development/agentic-development.md#cross-review-loop-on-agent-main).) A PR into `main` authored by an agent needs a human approval; a PR authored by a human in a Claude Code session is still that human's PR and needs a *different* human to approve.
 
 ### Expectations
 
@@ -294,7 +294,7 @@ These paths control what the system can do to external systems, or control the g
 | `adapters/` | Request allowlists and pinned API and MCP server versions |
 | `habits/*/policy/` | What each habit may write |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI checks and repository protection |
-| `.githooks/`, `.claude/settings.json`, `.claude/hooks/` | Local guardrails for humans and agents |
+| `.githooks/`, `.claude/settings.json`, `.claude/hooks/`, `.claude/skills/agent-loop/` | Local guardrails for humans and agents, and the agent loop's review protocol |
 | `scripts/checks/`, `scripts/lib/` | The convention and safety checks themselves |
 | `pyproject.toml`, `uv.lock`, `.python-version` (repository root) | Dependency sources and pins for every workspace member, and the import contracts |
 
@@ -346,7 +346,7 @@ AI-generated code is welcome and held to exactly the same standard as human code
 ### Identities
 
 - **Claude Code sessions** run under the developer's own git and GitHub identity. The developer owns the PR and cannot approve it.
-- **Development loop sessions** ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) run under a dedicated bot account per maintainer: a collaborator with write access that is not a code owner. They work only on `agent-main`, where they approve and merge the other bot's PRs; they can never satisfy `main`'s code owner review.
+- **Development loop sessions** ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)) run under the maintainer's own account and start everything they write on GitHub with an author note. They work only on `agent-main`, where they approve and merge the other maintainer's session's PRs; the Claude Code hook stops them from approving or merging into `main`.
 - **Autonomous agents** (Orchestrator, Improver, habits) use their **own** GitHub bot identities and branch names under `agent/…`. They can open PRs, never approve or merge.
 - **The Claude GitHub app** (`@claude`) runs under its own bot identity when a collaborator mentions it on an issue, or a PR's author mentions it on that PR. It pushes to a `claude/…` branch or to that PR's branch; it never approves or merges. See [agentic development](docs/development/agentic-development.md#claude-on-github).
 

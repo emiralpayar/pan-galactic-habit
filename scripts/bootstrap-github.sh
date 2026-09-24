@@ -55,13 +55,13 @@ fi
 # Squash for every PR; the squash commit uses the PR title and keeps commit
 # messages (and therefore Co-Authored-By trailers) in the body. Merge commits are
 # enabled only so a sync PR can merge main back into agent-main (ADR 0010); the
-# protect-main ruleset still allows only squash on main. Auto-merge lets the
-# agent-main loop queue a merge until the checks pass.
+# protect-main ruleset still allows only squash on main. Auto-merge stays off: it is
+# a repository-wide setting and would let an approval of a PR into main merge it at once.
 run gh api --method PATCH "repos/$repo" \
   -F allow_squash_merge=true \
   -F allow_merge_commit=true \
   -F allow_rebase_merge=false \
-  -F allow_auto_merge=true \
+  -F allow_auto_merge=false \
   -F allow_update_branch=true \
   -F delete_branch_on_merge=true \
   -f squash_merge_commit_title=PR_TITLE \

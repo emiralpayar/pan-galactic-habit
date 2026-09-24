@@ -7,7 +7,7 @@ description: Start work on a GitHub issue or task by syncing main and creating a
 
 Create a correctly named branch from an up-to-date `main`.
 
-**In the agent-main loop** (the `agent-loop` skill), branch from `origin/agent-main` instead, and claim the issue by assigning it to your bot account before creating the branch. There is no user to ask: if an issue is unclear, comment on it with the question and pick other work.
+**In the agent-main loop** (the `agent-loop` skill), branch from `origin/agent-main` instead, and claim the issue by assigning it to yourself (`@me`) and commenting with the loop's author note before creating the branch. Use `git switch --no-track -c <name> origin/agent-main` so the branch never tracks `agent-main`. There is no user to ask: if an issue is unclear, comment on it with the question and pick other work.
 
 ## Steps
 
