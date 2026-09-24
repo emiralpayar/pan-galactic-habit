@@ -28,7 +28,7 @@ Original description: (empty)
 
 Comment: "Nightly sync failed again last night on a single dropped connection, we lost the whole day's data."
 
-Suggested: "The nightly sync job fails permanently on a single transient network error, losing a day of data. Add retry with backoff so a transient failure doesn't require a manual rerun."
+Suggested: "The nightly sync job fails permanently on a single transient network error, losing a day of data. Add retry so a transient failure doesn't require a manual rerun."
 
 ### Bad
 
