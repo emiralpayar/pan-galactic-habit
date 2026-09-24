@@ -97,38 +97,69 @@ async def test_the_probe_can_see_built_in_tools_when_they_are_enabled(tmp_path: 
     pytest.fail("No init message.")
 
 
-def _init(tools: list[str], servers: list[str] | None = None) -> SystemMessage:
+def _init(
+    tools: list[str] | None,
+    servers: list[str] | None = None,
+    api_key_source: str = "none",
+) -> SystemMessage:
     names = ["habit"] if servers is None else servers
-    return SystemMessage(
-        subtype="init",
-        data={"tools": tools, "mcp_servers": [{"name": n, "source": "sdk"} for n in names]},
-    )
+    data: dict[str, object] = {"mcp_servers": [{"name": n, "source": "sdk"} for n in names]}
+    if tools is not None:
+        data["tools"] = tools
+    data["apiKeySource"] = api_key_source
+    return SystemMessage(subtype="init", data=data)
 
 
 def test_an_extra_tool_is_rejected(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError, match="extra: unmapped:Bash"):
-        _check_init(_init(["mcp__habit__get_item", "Bash"]), surface)
+        _check_init(_init(["mcp__habit__get_item", "Bash"]), surface, "none")
 
 
 def test_a_missing_tool_is_rejected(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError, match="missing: get_item"):
-        _check_init(_init([]), surface)
+        _check_init(_init([]), surface, "none")
 
 
 def test_a_server_the_surface_did_not_register_is_rejected(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError):
-        _check_init(_init(["mcp__habit__get_item", "mcp__other__write"]), surface)
+        _check_init(_init(["mcp__habit__get_item", "mcp__other__write"]), surface, "none")
 
 
 def test_a_tool_without_the_prefix_never_matches_a_surface_name(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError, match="unmapped:get_item"):
-        _check_init(_init(["get_item"]), surface)
+        _check_init(_init(["get_item"]), surface, "none")
 
 
 def test_an_extra_mcp_server_is_rejected(surface: ToolSurface) -> None:
     with pytest.raises(ToolSurfaceError, match="MCP servers"):
-        _check_init(_init(["mcp__habit__get_item"], servers=["habit", "connector"]), surface)
+        _check_init(
+            _init(["mcp__habit__get_item"], servers=["habit", "connector"]), surface, "none"
+        )
 
 
 def test_an_exact_match_passes(surface: ToolSurface) -> None:
-    assert _check_init(_init(["mcp__habit__get_item"]), surface) == surface.names
+    assert _check_init(_init(["mcp__habit__get_item"]), surface, "none") == surface.names
+
+
+def test_an_unexpected_credential_source_is_rejected(surface: ToolSurface) -> None:
+    init = _init(["mcp__habit__get_item"], api_key_source="ANTHROPIC_API_KEY")
+    with pytest.raises(ToolSurfaceError, match="credential source"):
+        _check_init(init, surface, "none")
+
+
+def test_a_missing_tools_list_is_rejected(surface: ToolSurface) -> None:
+    with pytest.raises(ToolSurfaceError, match="tools list"):
+        _check_init(_init(None), surface, "none")
+
+
+def test_a_non_list_tools_value_is_rejected(surface: ToolSurface) -> None:
+    init = SystemMessage(
+        subtype="init",
+        data={
+            "tools": "mcp__habit__get_item",
+            "mcp_servers": [{"name": "habit", "source": "sdk"}],
+            "apiKeySource": "none",
+        },
+    )
+    with pytest.raises(ToolSurfaceError, match="tools list"):
+        _check_init(init, surface, "none")
