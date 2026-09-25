@@ -30,8 +30,9 @@ class AzureDevOpsConfig(BaseModel):
     # Azure DevOps caps a work item batch at 200; the adapter caps it lower by default.
     max_work_item_ids_per_call: Annotated[int, Field(gt=0, le=200)] = 50
     # ADR 0005 caps read volume per session too. A placeholder, like the policy budgets,
-    # until the Backlog Refiner's real usage shows what a session needs.
-    max_work_items_per_session: Annotated[int, Field(gt=0)] = 200
+    # until the Backlog Refiner's real usage shows what a session needs. The upper bound
+    # keeps a mistyped value from switching the cap off.
+    max_work_items_per_session: Annotated[int, Field(gt=0, le=1000)] = 200
 
     @model_validator(mode="after")
     def _project_is_a_single_path_segment(self) -> Self:

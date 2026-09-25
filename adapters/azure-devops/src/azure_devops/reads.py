@@ -34,7 +34,8 @@ class WorkItemReader:
     """Reads work items from the one project in `config`, for one session.
 
     The session read cap counts every id this reader has requested, so the agent loop
-    constructs one reader per session and never shares it between sessions.
+    must construct one reader per session and never share it: a new reader starts a new
+    budget.
     """
 
     def __init__(

@@ -341,9 +341,11 @@ async def test_ids_count_toward_the_session_cap_even_when_nothing_comes_back() -
 async def test_duplicate_ids_count_once_toward_the_session_cap() -> None:
     async with _reader(_responds({"count": 0, "value": []}), SMALL_SESSION) as reader:
         await reader.get_work_items([1, 1, 2, 2, 3])
+        with pytest.raises(ReadCapExceededError, match="0 remain"):
+            await reader.get_work_items([4])
 
 
-@pytest.mark.parametrize("cap", [0, -1])
-def test_the_session_cap_must_be_positive(cap: int) -> None:
+@pytest.mark.parametrize("cap", [0, -1, 1001])
+def test_the_session_cap_must_be_bounded(cap: int) -> None:
     with pytest.raises(ValidationError, match="max_work_items_per_session"):
         CONFIG.model_validate({**CONFIG.model_dump(), "max_work_items_per_session": cap})

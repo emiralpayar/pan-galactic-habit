@@ -22,8 +22,8 @@ Only the operations implemented so far are on the allowlist in code; the rest of
 Adding one is a safety-critical PR, and adding the write operation is `Safety-Impact: loosens`.
 
 Read volume is capped per call and per session ([ADR 0005](../../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)).
-A `WorkItemReader` is one session's reader: it counts every distinct id it requests, including ids in a read that failed or came back empty, and refuses a read that would pass `max_work_items_per_session` before sending it.
-The agent loop constructs one reader per session and never shares one between sessions.
+A `WorkItemReader` is one session's reader: it counts the ids of every read, after removing duplicates within that read, including a read that failed or came back empty, and refuses a read that would pass `max_work_items_per_session` before sending it.
+The agent loop, once built, must construct one reader per session and never share one between sessions; a new reader starts a new budget.
 A write rejected because the revision changed fails closed and is shown to the user; it is never retried automatically.
 
 ## How the allowlist is enforced
