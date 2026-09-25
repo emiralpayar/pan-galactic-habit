@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Blocks commits on main and on branches that do not follow the naming conventions.
+# Blocks commits on main and agent-main, and on branches that do not follow the naming conventions.
 # Installed by `make setup`. See CONTRIBUTING.md#workflow.
 
 set -euo pipefail
@@ -17,9 +17,9 @@ branch="$(git symbolic-ref --short -q HEAD || true)"
 # Detached HEAD (e.g. mid-rebase): nothing to check.
 [ -n "$branch" ] || exit 0
 
-if [ "$branch" = "main" ]; then
-  cat >&2 <<'EOF'
-✖ Direct commits to main are not allowed.
+if [ "$branch" = "main" ] || [ "$branch" = "agent-main" ]; then
+  cat >&2 <<EOF
+✖ Direct commits to $branch are not allowed.
 
   Move your staged changes to a new branch and commit there:
     git switch -c <type>/<issue>-<short-description>
