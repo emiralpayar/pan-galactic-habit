@@ -114,6 +114,16 @@ def test_a_reservation_not_issued_by_the_budget_cannot_settle(
     assert budget.remaining == 1
 
 
+def test_a_reservation_count_cannot_be_changed(budget: SessionBudget) -> None:
+    reservation = _reserved(budget.reserve(1))
+
+    with pytest.raises(AttributeError):
+        reservation.count = 100  # type: ignore[misc]
+    object.__setattr__(reservation, "count", 100)
+    reservation.release()
+    assert budget.remaining == 3
+
+
 def test_a_reservation_settles_only_with_its_own_budget(policy: SafetyPolicy) -> None:
     one, other = SessionBudget(policy), SessionBudget(policy)
     _reserved(one.reserve(1)).commit()
@@ -130,6 +140,7 @@ def test_a_reservation_settles_only_with_its_own_budget(policy: SafetyPolicy) ->
         pytest.param(1.0, id="float"),
         pytest.param("1", id="string"),
         pytest.param(None, id="none"),
+        pytest.param(type("Count", (int,), {})(1), id="int-subclass"),
     ],
 )
 def test_a_bad_count_is_rejected_not_raised(budget: SessionBudget, count: object) -> None:

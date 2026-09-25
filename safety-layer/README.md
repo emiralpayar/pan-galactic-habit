@@ -50,11 +50,12 @@ budgets:                        # per_call <= per_session
 
 ## Budgets
 
-`safety_layer.budgets.SessionBudget` enforces a policy's `per_call` and `per_session` budgets for one session; build one per session from a policy returned by `load_policy`.
+`safety_layer.budgets.SessionBudget` enforces a policy's `per_call` and `per_session` budgets for one session; build one per session from a policy returned by `load_policy`. A new instance starts a new budget, so the code that owns the session must own its `SessionBudget`.
 
-- **Reserve, then commit or release.** `reserve(count)` holds budget for all the writes in one proposal, or rejects the whole proposal and holds nothing. The returned `Reservation` is committed once its writes execute, or released if they are rejected or not confirmed. Each reservation settles exactly once, and only against the budget that issued it; anything else raises, because it would count a write twice or return budget that was spent.
+- **Reserve, then commit or release.** `reserve(count)` holds budget for all the writes in one proposal, or rejects the whole proposal and holds nothing. The returned `Reservation` is committed once its writes execute, or released if they are rejected or not confirmed. Each reservation settles exactly once, only against the budget that issued it, and by the count that budget recorded; anything else raises, because it would count a write twice or return budget that was spent.
 - **Pending counts.** Reservations waiting for confirmation count against the session, so two pending proposals cannot together exceed it.
-- **Fail closed.** `reserve` never raises: a count that is not a positive integer, or any unexpected error, is a `BudgetRejection`. A policy whose budgets do not validate, for example one built with `model_construct`, raises `PolicyError` instead of producing a budget.
+- **Fail closed.** `reserve` raises no `Exception`: a count that is not a positive integer, or any unexpected error, is a `BudgetRejection`. A policy whose budgets do not validate, for example one built with `model_construct`, raises `PolicyError` instead of producing a budget.
+- **Necessary, not sufficient.** A `Reservation` is not permission to write: the request must also pass write validation, the per-time-window budget, and Write Confirmation. A reservation that is never settled holds its budget until the session ends, so the Write Confirmation flow must release it when a proposal is cancelled or times out.
 - **In memory, thread-safe.** Counters live in the process, which ARCHITECTURE.md §5.2 allows for per-session budgets. Per-time-window budgets need the Operational Store and are not enforced yet.
 
 ## Layout

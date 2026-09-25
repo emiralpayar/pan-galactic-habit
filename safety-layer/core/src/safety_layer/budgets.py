@@ -25,7 +25,7 @@ class BudgetRejection:
 
 
 # `eq=False` keeps identity equality and hashing, so the budget can hold its open reservations.
-@dataclass(eq=False, slots=True)
+@dataclass(frozen=True, eq=False, slots=True)
 class Reservation:
     """Budget held for one proposal's writes, until it is committed or released once."""
 
@@ -44,8 +44,8 @@ class Reservation:
 class SessionBudget:
     """The write budget of one session. Thread-safe.
 
-    Build it from a policy returned by `load_policy`, one per session; a new instance
-    starts a new session budget.
+    Build it from a policy returned by `load_policy`, one per session. A new instance
+    starts a new session budget, so the code that owns the session must own its budget.
     """
 
     def __init__(self, policy: SafetyPolicy) -> None:
@@ -58,9 +58,10 @@ class SessionBudget:
         self._lock = threading.Lock()
         self._committed = 0
         self._pending = 0
-        # Only reservations this budget issued may settle against it: releasing one built
-        # by hand would lower the pending count and hand out budget nobody reserved.
-        self._open: set[Reservation] = set()
+        # Each open reservation and the count it holds, as recorded here. Only these may
+        # settle, and by the recorded count: releasing one built by hand, or one whose count
+        # was changed, would lower the pending count and hand out budget nobody reserved.
+        self._open: dict[Reservation, int] = {}
 
     @property
     def remaining(self) -> int:
@@ -71,8 +72,8 @@ class SessionBudget:
     def reserve(self, count: int) -> Reservation | BudgetRejection:
         """Reserve `count` writes for one proposal, or reject the whole proposal.
 
-        Never raises: a bad count or an unexpected error is a rejection, and nothing is
-        reserved.
+        Raises no `Exception`: a bad count or an unexpected error is a rejection, and
+        nothing is reserved.
         """
         try:
             with self._lock:
@@ -80,13 +81,14 @@ class SessionBudget:
                     return rejection
                 self._pending += count
                 reservation = Reservation(count, self)
-                self._open.add(reservation)
+                self._open[reservation] = count
                 return reservation
         except Exception:
             return BudgetRejection("the budget check failed")
 
     def _check(self, count: int) -> BudgetRejection | None:
-        if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+        # Exactly `int`: a bool or an int subclass could compare or add unlike a count.
+        if type(count) is not int or count <= 0:
             return BudgetRejection("a proposal must contain a positive whole number of writes")
         per_call = self._budgets.per_call
         if count > per_call:
@@ -106,7 +108,7 @@ class SessionBudget:
                 raise RuntimeError(
                     "the reservation is not open: it was already settled or never issued here"
                 )
-            self._open.remove(reservation)
-            self._pending -= reservation.count
+            count = self._open.pop(reservation)
+            self._pending -= count
             if spent:
-                self._committed += reservation.count
+                self._committed += count
