@@ -5,7 +5,9 @@ description: Verify, push, and open a pull request that follows the repository's
 
 # Open a pull request
 
-Never merge or approve. The job ends with a PR link handed to the user.
+This skill never merges or approves. The job ends with a PR link handed to the user.
+
+**In the agent-main loop** (the `agent-loop` skill), the base is `agent-main`: read `agent-main` wherever a step below says `main`, open the PR ready for review (not a draft), start the body with the loop's author note, and set AI involvement to `authored`.
 
 ## Steps
 
