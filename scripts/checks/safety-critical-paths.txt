@@ -19,9 +19,11 @@ habits/*/policy/*
 .githooks/*
 .claude/settings.json
 .claude/hooks/*
+.claude/skills/agent-loop/*
 
 # The checks themselves
 scripts/checks/*
+scripts/bootstrap-github.sh
 scripts/lib/*
 
 # Python workspace: dependency sources and pins for every member, and the import contracts

@@ -17,8 +17,9 @@ If a request conflicts with ARCHITECTURE.md, stop and say so instead of silently
 
 These are non-negotiable. Local hooks, Claude Code hooks, CI, and GitHub rulesets enforce most of them; the rest rely on you.
 
-- **Never commit to `main` or push to `main`.** Always work on a branch and open a pull request.
-- **Never approve or merge a pull request**, including your own. Merging is a human decision.
+- **Never commit to or push to `main` or `agent-main`.** Always work on a branch and open a pull request.
+- **Never approve or merge a pull request into `main`**, including your own. Merging into `main` is a human decision.
+  The only exception is the development loop on `agent-main` ([ADR 0010](docs/adr/0010-development-agents-integrate-on-an-agent-main-branch.md)): a loop session running under its maintainer's agent account may approve and merge the *other* agent account's PRs into `agent-main`, and starts everything it writes on GitHub with the loop's author note, following the [cross-review loop](docs/development/agentic-development.md#cross-review-loop-on-agent-main).
 - **Never bypass hooks or checks** (`--no-verify`, force-pushing over others' work, disabling workflows, editing `core.hooksPath`).
 - **Never commit secrets, tokens, or real customer data** — including in eval fixtures, examples, and test data.
 - **Never give an agent direct access to an external system's write tools.** All writes go through the Safety Layer.
@@ -90,7 +91,7 @@ scripts/checks/safety-guard.sh --base origin/main
 | `improver/` | Meta-agent that opens PRs | |
 | `interface/` | Chat interface | |
 | `.github/workflows/`, `.github/rulesets/`, `.github/CODEOWNERS` | CI and repository controls | ✅ |
-| `.githooks/`, `.claude/settings.json`, `.claude/hooks/`, `scripts/checks/`, `scripts/lib/` | Local guardrails and convention checks | ✅ |
+| `.githooks/`, `.claude/settings.json`, `.claude/hooks/`, `.claude/skills/agent-loop/`, `scripts/checks/`, `scripts/lib/`, `scripts/bootstrap-github.sh` | Local guardrails, the agent loop's review protocol, and convention checks | ✅ |
 | `pyproject.toml`, `uv.lock`, `.python-version` | Python workspace pins and import contracts | ✅ |
 
 ## Current phase

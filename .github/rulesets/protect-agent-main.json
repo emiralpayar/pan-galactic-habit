@@ -1,0 +1,46 @@
+{
+  "name": "protect-agent-main",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/agent-main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": true,
+        "required_review_thread_resolution": false,
+        "allowed_merge_methods": ["squash", "merge"]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          { "context": "Branch name" },
+          { "context": "PR title" },
+          { "context": "Commit messages" },
+          { "context": "Safety guard" },
+          { "context": "Markdown lint" },
+          { "context": "Shell lint" },
+          { "context": "Python lint" },
+          { "context": "Python type check" },
+          { "context": "Python tests" },
+          { "context": "Python import contracts" }
+        ]
+      }
+    }
+  ]
+}

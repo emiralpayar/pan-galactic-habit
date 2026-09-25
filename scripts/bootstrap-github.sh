@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Applies the repository's GitHub configuration: merge settings, labels, and
-# the `protect-main` ruleset from .github/rulesets/protect-main.json.
+# Applies the repository's GitHub configuration: merge settings, labels, the
+# `agent-main` branch (ADR 0010), and every ruleset in .github/rulesets/.
 #
 # Requires: gh (authenticated), jq, and ADMIN permission on the repository.
 # Rulesets on private repositories owned by a personal account require GitHub Pro
@@ -12,9 +12,9 @@
 #
 # Environment:
 #   REPO                 owner/name (default: detected from the git remote)
-#   REQUIRED_APPROVALS   overrides required_approving_review_count (default: from the JSON)
+#   REQUIRED_APPROVALS   overrides required_approving_review_count in protect-main (default: from the JSON)
 #
-# Safe to re-run: labels are upserted and the ruleset is updated in place.
+# Safe to re-run: labels are upserted and rulesets are updated in place.
 
 set -euo pipefail
 
@@ -30,7 +30,6 @@ if [ "${1:-}" = "--dry-run" ]; then
 fi
 
 root="$(repo_root)"
-ruleset_file="$root/.github/rulesets/protect-main.json"
 
 for tool in gh jq; do
   command -v "$tool" >/dev/null 2>&1 || { fail "$tool is required"; exit 1; }
@@ -53,11 +52,14 @@ if [ "$is_admin" != "true" ] && ! $dry_run; then
 fi
 
 # ── Merge settings ────────────────────────────────────────────────────────
-# Squash only; the squash commit uses the PR title and keeps commit messages
-# (and therefore Co-Authored-By trailers) in the body.
+# Squash for every PR; the squash commit uses the PR title and keeps commit
+# messages (and therefore Co-Authored-By trailers) in the body. Merge commits are
+# enabled only so a sync PR can merge main back into agent-main (ADR 0010); the
+# protect-main ruleset still allows only squash on main. Auto-merge stays off: it is
+# a repository-wide setting and would let an approval of a PR into main merge it at once.
 run gh api --method PATCH "repos/$repo" \
   -F allow_squash_merge=true \
-  -F allow_merge_commit=false \
+  -F allow_merge_commit=true \
   -F allow_rebase_merge=false \
   -F allow_auto_merge=false \
   -F allow_update_branch=true \
@@ -85,31 +87,50 @@ label "needs-adr"          "e99695" "A decision must be recorded in an ADR befor
 label "agent:orchestrator" "bfdadc" "Authored by the Orchestrator Agent"
 label "agent:improver"     "bfdadc" "Authored by the Improver Agent"
 label "agent:habit"        "bfdadc" "Proposed by a running habit"
+label "agent-loop"         "5319e7" "Work for the agent-main cross-review loop (ADR 0010)"
+label "needs-human"        "d93f0b" "The agent-main loop stopped here and needs a maintainer"
 ok "Labels upserted${note}"
 
-# ── Ruleset ───────────────────────────────────────────────────────────────
-payload="$(cat "$ruleset_file")"
-if [ -n "${REQUIRED_APPROVALS:-}" ]; then
-  payload="$(printf '%s' "$payload" | jq --argjson n "$REQUIRED_APPROVALS" \
-    '(.rules[] | select(.type == "pull_request") | .parameters.required_approving_review_count) = $n')"
-fi
-
-name="$(printf '%s' "$payload" | jq -r .name)"
-existing_id="$(gh api "repos/$repo/rulesets" --jq ".[] | select(.name == \"$name\") | .id" 2>/dev/null || true)"
-
-if $dry_run; then
-  echo "[dry-run] ruleset payload:"
-  printf '%s\n' "$payload"
-elif [ -n "$existing_id" ]; then
-  printf '%s' "$payload" | gh api --method PUT "repos/$repo/rulesets/$existing_id" --input - --silent
-  ok "Ruleset '$name' updated (id $existing_id)"
+# ── agent-main branch ─────────────────────────────────────────────────────
+# The integration branch for the agent loop (ADR 0010), created from main once.
+if gh api "repos/$repo/branches/agent-main" --silent 2>/dev/null; then
+  ok "Branch agent-main exists"
 else
-  if ! printf '%s' "$payload" | gh api --method POST "repos/$repo/rulesets" --input - --silent; then
-    fail "Could not create the ruleset. Private repositories on a free personal account"
-    fail "do not support rulesets; upgrade the owner to GitHub Pro or move the repo to an organization."
-    exit 1
-  fi
-  ok "Ruleset '$name' created"
+  main_sha="$(gh api "repos/$repo/git/ref/heads/main" --jq .object.sha)"
+  run gh api --method POST "repos/$repo/git/refs" \
+    -f ref=refs/heads/agent-main -f sha="$main_sha" --silent
+  ok "Branch agent-main created from main${note}"
 fi
+
+# ── Rulesets ──────────────────────────────────────────────────────────────
+apply_ruleset() {
+  local payload name existing_id
+  payload="$(cat "$1")"
+  name="$(printf '%s' "$payload" | jq -r .name)"
+  if [ "$name" = "protect-main" ] && [ -n "${REQUIRED_APPROVALS:-}" ]; then
+    payload="$(printf '%s' "$payload" | jq --argjson n "$REQUIRED_APPROVALS" \
+      '(.rules[] | select(.type == "pull_request") | .parameters.required_approving_review_count) = $n')"
+  fi
+  existing_id="$(gh api "repos/$repo/rulesets" --jq ".[] | select(.name == \"$name\") | .id" 2>/dev/null || true)"
+
+  if $dry_run; then
+    echo "[dry-run] ruleset $name payload:"
+    printf '%s\n' "$payload"
+  elif [ -n "$existing_id" ]; then
+    printf '%s' "$payload" | gh api --method PUT "repos/$repo/rulesets/$existing_id" --input - --silent
+    ok "Ruleset '$name' updated (id $existing_id)"
+  else
+    if ! printf '%s' "$payload" | gh api --method POST "repos/$repo/rulesets" --input - --silent; then
+      fail "Could not create the ruleset '$name'. Private repositories on a free personal account"
+      fail "do not support rulesets; upgrade the owner to GitHub Pro or move the repo to an organization."
+      exit 1
+    fi
+    ok "Ruleset '$name' created"
+  fi
+}
+
+for ruleset_file in "$root"/.github/rulesets/*.json; do
+  apply_ruleset "$ruleset_file"
+done
 
 ok "GitHub configuration applied${note}. Verify under Settings → Rules → Rulesets."

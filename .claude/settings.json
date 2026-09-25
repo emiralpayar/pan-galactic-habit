@@ -21,7 +21,6 @@
       "Bash(scripts/checks/safety-guard.sh:*)"
     ],
     "deny": [
-      "Bash(gh pr merge:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Read(./.env)",
