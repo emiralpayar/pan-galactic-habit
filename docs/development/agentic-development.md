@@ -108,15 +108,16 @@ Commits carry the usual `Co-Authored-By:` trailer, and PRs set `AI involvement` 
 
 ### Review protocol
 
-1. The author session opens a PR into `agent-main` from the `open-pr` skill, with the PR template filled in.
+0. **Plan first.** Before writing code, the author session posts a plan on the issue (approach, files, risks, rejected alternatives, open questions), addressed to the other agent account. It waits for a reply, or for 30 minutes, and the two discuss objections in the issue.
+1. The author session opens a PR into `agent-main` from the `open-pr` skill, with the PR template filled in and a link to the plan discussion.
 2. The other session reviews it against AGENTS.md, ARCHITECTURE.md, CONTRIBUTING.md, the ADRs, and the component READMEs. It runs the `safety-reviewer` subagent on safety-critical paths and the `architecture-reviewer` subagent for new components or changed interactions.
-3. It posts one review:
+3. It posts one review. **Every review asks at least one concrete question or challenge** (design, risks, tests, alternatives), uses inline comments on `file:line` where possible, and says what the reviewer verified. Then:
    - **Blocking findings:** a review of type *Request changes*, listing each finding with `file:line`. Only rule violations and correctness problems block.
    - **None:** it approves (`gh pr review <number> --approve --body-file <file>`). Non-blocking notes go in the approval body.
-4. The author session addresses each finding in new commits, and replies with what it changed or why it disagrees.
-5. Once approved and green, the reviewer merges (`gh pr merge <number> --squash`, or `--merge` for a sync). If checks are still running, it merges in a later iteration; auto-merge is off.
+4. The author session answers **every finding and question in its thread**: `Fixed in <sha>` with what changed, or why it disagrees, citing the rule or evidence. A silent fix does not count. The reviewer answers each disagreement in turn, accepting or holding it with a reason.
+5. The reviewer approves only once every question and finding has an answer. Once approved and green, it merges (`gh pr merge <number> --squash`, or `--merge` for a sync). If checks are still running, it merges in a later iteration; auto-merge is off.
 6. **A PR that declares `Safety-Impact: loosens`** gets the `needs-human` label instead of an approval: a maintainer decides whether a control is loosened. Other safety-critical PRs are reviewed and merged by the loop like any PR.
-7. **Loop guard:** after three rounds without an approval, or when the sessions disagree on whether a finding is valid, the reviewer adds `needs-human`, comments with the disagreement, and both sessions leave the PR alone.
+7. **Loop guard:** after three exchanges on the same point without agreement, or a fourth review round without an approval, the reviewer adds `needs-human`, summarizes both positions with their evidence, and both sessions leave the PR alone.
 
 The guard hook allows merging and approving only for a PR into `agent-main`, named by number or URL in a single plain command with only the options above. It refuses both from a code owner's account, and blocks the other forms it recognizes, including `gh api` merges and reviews, retargeting a PR, gh aliases and extensions, and direct API URLs. It is a guardrail in front of the rulesets, not a sandbox.
 
