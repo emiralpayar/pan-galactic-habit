@@ -62,7 +62,7 @@ def test_every_listed_operation_is_read_only_for_now() -> None:
         pytest.param(
             ALLOWED.replace("_apis/wit/workitems", "_apis/wit/wiql"),
             "not an allowlisted request",
-            id="not-implemented-yet",
+            id="wiql-by-get",
         ),
         pytest.param(ALLOWED.replace("api-version=7.1", "api-version=7.2"), "pinned", id="version"),
         pytest.param(
@@ -122,6 +122,27 @@ def test_a_query_that_could_be_read_two_ways_is_rejected(query: str) -> None:
 def test_an_encoded_separator_is_rejected(path: str) -> None:
     with pytest.raises(RequestNotAllowedError, match=r"encoded separator|outside"):
         _check(f"https://dev.azure.com/{path}?ids=1&api-version=7.1")
+
+
+WIQL = f"{CONFIG.base_url}_apis/wit/wiql?%24top=5&api-version=7.1"
+
+
+def test_a_wiql_query_passes() -> None:
+    _check(WIQL, method="POST", json={"query": "SELECT [System.Id] FROM WorkItems"})
+
+
+@pytest.mark.parametrize(
+    ("url", "reason"),
+    [
+        pytest.param(WIQL.replace("wiql?", "wiql/12?"), "not an allowlisted", id="stored-query"),
+        pytest.param(WIQL.replace("7.1", "7.2"), "pinned", id="version"),
+        pytest.param(WIQL + "&timePrecision=true", "not allowed", id="time-precision"),
+        pytest.param(WIQL + "&%24top=6", "repeated", id="repeated-top"),
+    ],
+)
+def test_a_wiql_request_outside_the_allowlist_is_rejected(url: str, reason: str) -> None:
+    with pytest.raises(RequestNotAllowedError, match=reason):
+        _check(url, method="POST", json={"query": "SELECT [System.Id] FROM WorkItems"})
 
 
 def test_a_streamed_body_cannot_hide_from_the_body_check() -> None:

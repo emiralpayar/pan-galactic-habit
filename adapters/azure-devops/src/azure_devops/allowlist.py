@@ -66,6 +66,17 @@ ALLOWLIST: Final = (
         # configured project, so the caller drops work items from other projects.
         query=frozenset({"ids", "fields", "errorPolicy"}),
     ),
+    AllowedRequest(
+        operation="find-work-items",
+        kind="read",
+        method="POST",
+        path="_apis/wit/wiql",
+        api_version="7.1",
+        # The body is WIQL, which the transport does not parse: `queries.py` is the only code
+        # that writes it, and results are ids whose content is read, and project-filtered,
+        # through `get-work-items`.
+        query=frozenset({"$top"}),
+    ),
 )
 
 

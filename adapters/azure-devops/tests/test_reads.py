@@ -8,6 +8,7 @@ from pydantic import SecretStr, ValidationError
 
 from azure_devops.allowlist import RequestNotAllowedError
 from azure_devops.config import AzureDevOpsConfig
+from azure_devops.queries import WorkItemQuery
 from azure_devops.reads import AzureDevOpsError, ReadCapExceededError, WorkItemReader
 
 CONFIG = AzureDevOpsConfig(
@@ -349,3 +350,132 @@ async def test_duplicate_ids_count_once_toward_the_session_cap() -> None:
 def test_the_session_cap_must_be_bounded(cap: int) -> None:
     with pytest.raises(ValidationError, match="max_work_items_per_session"):
         CONFIG.model_validate({**CONFIG.model_dump(), "max_work_items_per_session": cap})
+
+
+def _query_result(*ids: int) -> dict[str, object]:
+    return {
+        "queryType": "flat",
+        "workItems": [
+            {"id": id_, "url": f"https://dev.azure.com/contoso/_apis/wit/workItems/{id_}"}
+            for id_ in ids
+        ],
+    }
+
+
+def _recorded_queries(
+    sent: list[httpx.Request], payload: object
+) -> Callable[[httpx.Request], httpx.Response]:
+    def record(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        return httpx.Response(200, json=payload)
+
+    return record
+
+
+@pytest.mark.anyio
+async def test_finds_work_items_with_a_project_confined_query() -> None:
+    sent: list[httpx.Request] = []
+    query = WorkItemQuery(types=("User Story", "Bug"), states=("New",), tags=("needs-refinement",))
+    async with _reader(_recorded_queries(sent, _query_result(4, 2))) as reader:
+        assert await reader.find_work_items(query) == (4, 2)
+
+    request = sent[0]
+    assert request.method == "POST"
+    assert request.url.path == "/contoso/Sandbox/_apis/wit/wiql"
+    assert dict(request.url.params) == {"$top": "50", "api-version": "7.1"}
+    assert json.loads(request.content) == {
+        "query": (
+            "SELECT [System.Id] FROM WorkItems"
+            " WHERE [System.TeamProject] = @project"
+            " AND [System.WorkItemType] IN ('User Story', 'Bug')"
+            " AND [System.State] IN ('New')"
+            " AND [System.Tags] CONTAINS 'needs-refinement'"
+            " ORDER BY [System.ChangedDate] DESC"
+        )
+    }
+
+
+@pytest.mark.anyio
+async def test_an_empty_query_is_still_confined_to_the_project() -> None:
+    sent: list[httpx.Request] = []
+    async with _reader(_recorded_queries(sent, _query_result())) as reader:
+        assert await reader.find_work_items(WorkItemQuery()) == ()
+
+    assert json.loads(sent[0].content)["query"] == (
+        "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project"
+        " ORDER BY [System.ChangedDate] DESC"
+    )
+
+
+@pytest.mark.anyio
+async def test_a_smaller_limit_is_sent_as_top() -> None:
+    sent: list[httpx.Request] = []
+    async with _reader(_recorded_queries(sent, _query_result())) as reader:
+        await reader.find_work_items(WorkItemQuery(limit=5))
+
+    assert sent[0].url.params["$top"] == "5"
+
+
+@pytest.mark.anyio
+async def test_results_past_the_limit_are_dropped_even_if_azure_devops_sends_them() -> None:
+    async with _reader(_responds(_query_result(*range(1, 20)))) as reader:
+        assert await reader.find_work_items(WorkItemQuery(limit=3)) == (1, 2, 3)
+
+
+@pytest.mark.anyio
+async def test_a_limit_over_the_configured_cap_is_refused_before_a_request_is_sent() -> None:
+    def unreachable(_: httpx.Request) -> httpx.Response:  # pragma: no cover - must not run
+        raise AssertionError("a request was sent")
+
+    async with _reader(unreachable) as reader:
+        with pytest.raises(ValueError, match="exceeds the cap of 50"):
+            await reader.find_work_items(WorkItemQuery(limit=51))
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param("Bug') OR [System.TeamProject] <> @project OR ('", id="quote"),
+        pytest.param('Bug"', id="double-quote"),
+        pytest.param("[System.Id]", id="brackets"),
+        pytest.param("@project", id="macro"),
+        pytest.param("Bug\nNew", id="newline"),
+        pytest.param("", id="empty"),
+        pytest.param(" Bug", id="leading-space"),
+        pytest.param("x" * 129, id="too-long"),
+    ],
+)
+@pytest.mark.parametrize("field", ["types", "states", "tags"])
+def test_a_value_that_could_change_the_query_is_refused(field: str, value: str) -> None:
+    with pytest.raises(ValidationError):
+        WorkItemQuery.model_validate({field: [value]})
+
+
+@pytest.mark.parametrize("extra", [{"wiql": "SELECT *"}, {"project": "Other"}, {"limit": 0}])
+def test_a_query_takes_only_structured_filters(extra: dict[str, object]) -> None:
+    with pytest.raises(ValidationError):
+        WorkItemQuery.model_validate(extra)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param({"workItems": [{"id": 0}]}, id="zero-id"),
+        pytest.param({"workItems": [{"id": "1"}]}, id="string-id"),
+        pytest.param({"queryType": "flat"}, id="no-work-items"),
+    ],
+)
+async def test_an_unexpected_query_result_raises(payload: object) -> None:
+    async with _reader(_responds(payload)) as reader:
+        with pytest.raises(AzureDevOpsError, match="unexpected QueryResult payload"):
+            await reader.find_work_items(WorkItemQuery())
+
+
+@pytest.mark.anyio
+async def test_a_failed_query_raises_without_quoting_the_body() -> None:
+    async with _reader(_responds({"message": "secret content"}, status=400)) as reader:
+        with pytest.raises(AzureDevOpsError, match="find-work-items returned 400") as raised:
+            await reader.find_work_items(WorkItemQuery())
+
+    assert "secret content" not in str(raised.value)
