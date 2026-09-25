@@ -1,10 +1,12 @@
 """Validates a proposed write against a habit's Safety Policy.
 
-The engine checks the complete write request an adapter built (its target and every
-payload operation and field), never just an operation name, as safety-layer/README.md
-and ARCHITECTURE.md §5.2 require. `validate` only decides whether a request may proceed;
-it never applies anything, and passing it is not enough to execute a write, since budgets
-and Write Confirmation still gate execution.
+The engine checks the whole payload of the write request an adapter built (every
+operation and field in it), never just an operation name, as safety-layer/README.md and
+ARCHITECTURE.md §5.2 require. `target` is opaque and is not inspected here, and
+`WriteRequest` has no `parameters` yet: this PR scopes the check to the operation name and
+the payload; a later change may extend it. `validate` only decides whether a request may
+proceed; it never applies anything, and passing it is not enough to execute a write, since
+budgets and Write Confirmation still gate execution.
 """
 
 from __future__ import annotations
@@ -83,17 +85,45 @@ def validate(policy: SafetyPolicy, request: WriteRequest) -> ValidationResult:
     no mutating operation is rejected too: there is nothing for Write Confirmation to
     preview or confirm.
 
-    Never raises: this runs on every write, so an unexpected error (a malformed request,
-    a bug here) must reject rather than crash or, worse, let the write through
+    Raises no `Exception`: this runs on every write, so an unexpected error (a malformed
+    request, a bug here) must reject rather than crash or, worse, let the write through
     (invariant 3, fail closed).
     """
     try:
         return _validate(policy, request)
     except Exception as error:  # deliberately broad: any failure here must reject, not raise
-        return Rejected(f"unexpected error validating the write: {error}")
+        return Rejected(f"unexpected error validating the write: {type(error).__name__}")
+
+
+def _is_well_formed(request: WriteRequest) -> bool:
+    """Whether `request` has exactly the shape `WriteRequest` promises.
+
+    Checked with `type(...) is ...`, never `isinstance`, so a `str` or `tuple` subclass
+    with a lying `__eq__` or `__contains__` cannot make a later comparison pass when it
+    should not (invariant 2, deny by default). `payload` must be a `tuple`, not just
+    iterable: a `list` could be mutated after this check but before the write is sent, and
+    a generator would be consumed by this check and never seen by the caller.
+    """
+    if type(request) is not WriteRequest:
+        return False
+    if type(request.operation) is not str or type(request.target) is not str:
+        return False
+    if type(request.payload) is not tuple:
+        return False
+    for item in request.payload:
+        if type(item) is not PayloadOperation:
+            return False
+        if type(item.op) is not str or type(item.field) is not str:
+            return False
+        if item.from_field is not None and type(item.from_field) is not str:
+            return False
+    return True
 
 
 def _validate(policy: SafetyPolicy, request: WriteRequest) -> ValidationResult:
+    if not _is_well_formed(request):
+        return Rejected("malformed write request")
+
     if not any(rule.operation == request.operation for rule in policy.writes):
         return Rejected(f"operation {request.operation!r} is not allowed")
 

@@ -7,7 +7,7 @@ The deterministic (non-LLM) engine that gates every write to an external system 
 ## Responsibilities
 
 - Load and validate a habit's Safety Policy.
-- Validate each proposed write **as the complete request** the adapter built (target, parameters, and every payload operation and field), not by tool name. Non-mutating preconditions (e.g. a JSON Patch `test`) are allowed; operations that copy from another path (e.g. `move`, `copy`) are rejected.
+- Validate each proposed write **as a whole payload** (every payload operation and field), not by tool name. Non-mutating preconditions (e.g. a JSON Patch `test`) are allowed; operations that copy from another path (e.g. `move`, `copy`) are rejected.
 - Enforce budgets per call, per session, and per time window.
 - Produce the diff preview for Write Confirmation, and re-validate at execution time.
 - Execute approved writes through the adapter. The engine is handed the adapter's write executor (an import contract stops it from importing an adapter), so it stays system-agnostic.
@@ -50,15 +50,16 @@ budgets:                        # per_call <= per_session
 
 ## Write validation
 
-`safety_layer.write_validation.validate(policy, request)` checks a `WriteRequest` (an operation name, an opaque adapter-defined target, and a tuple of `PayloadOperation`s) as the complete request the adapter built, per the payload-level policy check in ARCHITECTURE.md §5.2.
+`safety_layer.write_validation.validate(policy, request)` checks a `WriteRequest` (an operation name, an opaque adapter-defined target, and a tuple of `PayloadOperation`s) against the payload-level policy check in ARCHITECTURE.md §5.2. `target` is opaque and not inspected, and `WriteRequest` has no `parameters` field yet; a later change may extend the check to cover them.
 
+- Every field of `request` is checked to be exactly the type `WriteRequest` promises (`type(...) is ...`, not `isinstance`), so a lookalike object with a permissive `__eq__` or a mutable `list` payload cannot pass as a well-formed request.
 - The operation must be listed under `writes` in the policy.
 - Every mutating payload operation (`add`, `replace`, `remove`) must target a field the policy allows for that operation.
 - `test` is allowed as a precondition and never counts as a mutation.
 - `move`, `copy`, any unknown `op`, and any operation carrying `from` are rejected outright, since none can be checked against a field allowlist.
 - A request with no mutating operation is rejected: there is nothing for Write Confirmation to preview or confirm.
 - The whole request is rejected if any single operation is rejected; nothing is ever partly applied.
-- `validate` never raises. An unexpected error is a rejection, like every other failure (fail closed).
+- `validate` raises no `Exception`. An unexpected error is a rejection, like every other failure (fail closed).
 
 Budgets, Write Confirmation, and audit are not implemented yet; passing `validate` is necessary but not sufficient to execute a write.
 

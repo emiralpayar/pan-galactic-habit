@@ -111,16 +111,88 @@ def test_malformed_input_is_rejected_instead_of_raising() -> None:
         payload=(_NotAPayloadOperation(),),  # type: ignore[arg-type]
     )
 
-    result = validate(POLICY, request)
-
-    assert isinstance(result, Rejected)
-    assert "unexpected error" in result.reason
+    assert validate(POLICY, request) == Rejected("malformed write request")
 
 
-def test_an_unexpected_error_is_rejected_instead_of_raising() -> None:
+def test_a_non_tuple_payload_is_rejected_as_malformed() -> None:
     request = WriteRequest(operation="update-record", target="1", payload=123)  # type: ignore[arg-type]
 
-    result = validate(POLICY, request)
+    assert validate(POLICY, request) == Rejected("malformed write request")
 
-    assert isinstance(result, Rejected)
-    assert "unexpected error" in result.reason
+
+def test_a_list_payload_is_rejected_as_malformed() -> None:
+    # A list can be mutated after validation and before the write is sent; only a tuple
+    # is accepted.
+    request = WriteRequest(
+        operation="update-record",
+        target="1",
+        payload=[PayloadOperation(op="replace", field="title")],  # type: ignore[arg-type]
+    )
+
+    assert validate(POLICY, request) == Rejected("malformed write request")
+
+
+def test_a_generator_payload_is_rejected_as_malformed() -> None:
+    # A generator is consumed by inspecting it, so what would be checked is not what
+    # would be sent.
+    payload = (op for op in (PayloadOperation(op="replace", field="title"),))
+    request = WriteRequest(operation="update-record", target="1", payload=payload)  # type: ignore[arg-type]
+
+    assert validate(POLICY, request) == Rejected("malformed write request")
+
+
+class _EqAnything(str):
+    """A `str` subclass that compares equal to everything. `type(...) is str` rejects
+    it; `==` and `in`, which the pre-fix code relied on, would not."""
+
+    def __eq__(self, other: object) -> bool:
+        return True
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
+def test_a_str_subclass_with_a_permissive_eq_cannot_bypass_the_field_allowlist() -> None:
+    request = _request(PayloadOperation(op="replace", field=_EqAnything("state")))
+
+    assert validate(POLICY, request) == Rejected("malformed write request")
+
+
+def test_a_str_subclass_with_a_permissive_eq_cannot_bypass_the_precondition_check() -> None:
+    # Without the type check, this op would compare equal to "test" (skipping the field
+    # allowlist) while still not being the string "test" itself.
+    request = _request(
+        PayloadOperation(op=_EqAnything("move"), field="state"),
+        PayloadOperation(op="replace", field="title"),
+    )
+
+    assert validate(POLICY, request) == Rejected("malformed write request")
+
+
+def test_an_operation_object_with_a_permissive_eq_cannot_bypass_the_operation_allowlist() -> None:
+    request = _request(
+        PayloadOperation(op="replace", field="title"), operation=_EqAnything("delete-record")
+    )
+
+    assert validate(POLICY, request) == Rejected("malformed write request")
+
+
+@pytest.mark.parametrize("op", ["add", "replace", "remove"])
+def test_each_mutating_op_on_an_allowed_field_is_accepted(op: str) -> None:
+    request = _request(PayloadOperation(op=op, field="title"))
+
+    assert validate(POLICY, request) == Accepted()
+
+
+def test_a_policy_whose_allows_raises_is_rejected_instead_of_raising() -> None:
+    class _RaisingPolicy:
+        writes = POLICY.writes
+
+        def allows(self, operation: str, field: str) -> bool:
+            raise RuntimeError("boom")
+
+    request = _request(PayloadOperation(op="replace", field="title"))
+
+    result = validate(_RaisingPolicy(), request)  # type: ignore[arg-type]
+
+    assert result == Rejected("unexpected error validating the write: RuntimeError")
