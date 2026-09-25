@@ -1,6 +1,6 @@
 # Safety Layer
 
-> **Status:** in progress — Phase 1. The Safety Policy loader exists; write validation, budgets, Write Confirmation, and audit do not. **Safety-critical.** Every change requires a `Safety-Impact` declaration and code owner approval.
+> **Status:** in progress — Phase 1. The Safety Policy loader and write validation exist; budgets, Write Confirmation, and audit do not. **Safety-critical.** Every change requires a `Safety-Impact` declaration and code owner approval.
 
 The deterministic (non-LLM) engine that gates every write to an external system (ARCHITECTURE.md §2, §5.2). The engine is shared; what each habit may write is defined by that habit's `policy/`.
 
@@ -47,6 +47,20 @@ budgets:                        # per_call <= per_session
 - **Fail closed.** A missing or unreadable file, invalid YAML, unknown keys, wrong types, or a policy for another habit raise `PolicyError`. Duplicate keys, anchors, aliases, merge keys, explicit tags, and integers that are not plain decimal (`010`, `0x10`, `1:30`) are rejected too, because each can make the loaded policy differ from the diff a reviewer approved.
 - **Only from the loader.** Code that enforces a policy must take it from `load_policy`, never build a `SafetyPolicy` directly: constructing one skips the file, the habit check, or (with `model_construct`) validation.
 - **Write Confirmation is not configurable.** It is an engine invariant, so the policy has no setting for it.
+
+## Write validation
+
+`safety_layer.write_validation.validate(policy, request)` checks a `WriteRequest` (an operation name, an opaque adapter-defined target, and a tuple of `PayloadOperation`s) as the complete request the adapter built, per the payload-level policy check in ARCHITECTURE.md §5.2.
+
+- The operation must be listed under `writes` in the policy.
+- Every mutating payload operation (`add`, `replace`, `remove`) must target a field the policy allows for that operation.
+- `test` is allowed as a precondition and never counts as a mutation.
+- `move`, `copy`, any unknown `op`, and any operation carrying `from` are rejected outright, since none can be checked against a field allowlist.
+- A request with no mutating operation is rejected: there is nothing for Write Confirmation to preview or confirm.
+- The whole request is rejected if any single operation is rejected; nothing is ever partly applied.
+- `validate` never raises. An unexpected error is a rejection, like every other failure (fail closed).
+
+Budgets, Write Confirmation, and audit are not implemented yet; passing `validate` is necessary but not sufficient to execute a write.
 
 ## Layout
 
