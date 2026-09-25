@@ -21,7 +21,9 @@ The identifier is the operation name Safety Policies use (`safety-layer/README.m
 Only the operations implemented so far are on the allowlist in code; the rest of this table is the plan.
 Adding one is a safety-critical PR, and adding the write operation is `Safety-Impact: loosens`.
 
-Read volume is capped per call; the per-session cap is not implemented yet.
+Read volume is capped per call and per session ([ADR 0005](../../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md)).
+A `WorkItemReader` is one session's reader: it counts every distinct id it requests, including ids in a read that failed or came back empty, and refuses a read that would pass `max_work_items_per_session` before sending it.
+The agent loop constructs one reader per session and never shares one between sessions.
 A write rejected because the revision changed fails closed and is shown to the user; it is never retried automatically.
 
 ## How the allowlist is enforced
@@ -52,4 +54,4 @@ The write path therefore needs a seam between the two; it is designed with that 
 - Which service account the token belongs to, and where it is stored. [ADR 0008](../../docs/adr/0008-sqlite-operational-store-and-a-service-account-per-system.md) decides that writes use one least-privilege service account per system, which resolves the question [ADR 0005](../../docs/adr/0005-azure-devops-adapter-calls-the-rest-api-directly.md) left open; where the credential lives is decided with hosting (ARCHITECTURE.md §11.1).
 - How the token reaches `AzureDevOpsConfig`: it is passed in, and nothing here reads the environment yet.
 - Pagination, retry, and rate-limit handling.
-- The caps for query results, per-session reads, and response size.
+- The values of the caps for query results, per-call and per-session reads, and response size; the current defaults are placeholders.

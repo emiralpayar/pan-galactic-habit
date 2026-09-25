@@ -4,11 +4,11 @@ from collections.abc import Callable
 
 import httpx
 import pytest
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 
 from azure_devops.allowlist import RequestNotAllowedError
 from azure_devops.config import AzureDevOpsConfig
-from azure_devops.reads import AzureDevOpsError, WorkItemReader
+from azure_devops.reads import AzureDevOpsError, ReadCapExceededError, WorkItemReader
 
 CONFIG = AzureDevOpsConfig(
     organization="contoso", project="Sandbox", token=SecretStr("not-a-real-token")
@@ -30,8 +30,10 @@ def _work_item(id_: int = 1, project: str = "Sandbox", **fields: str) -> dict[st
     }
 
 
-def _reader(handler: Callable[[httpx.Request], httpx.Response]) -> WorkItemReader:
-    return WorkItemReader(CONFIG, transport=httpx.MockTransport(handler))
+def _reader(
+    handler: Callable[[httpx.Request], httpx.Response], config: AzureDevOpsConfig = CONFIG
+) -> WorkItemReader:
+    return WorkItemReader(config, transport=httpx.MockTransport(handler))
 
 
 def _responds(payload: object, status: int = 200) -> Callable[[httpx.Request], httpx.Response]:
@@ -294,3 +296,54 @@ async def test_the_reader_cannot_send_a_write() -> None:
             await reader._client.patch(
                 "_apis/wit/workitems/1", json=[], params={"api-version": "7.1"}
             )
+
+
+SMALL_SESSION = CONFIG.model_copy(update={"max_work_items_per_session": 3})
+
+
+@pytest.mark.anyio
+async def test_a_read_past_the_session_cap_is_refused_before_it_is_sent() -> None:
+    sent: list[str] = []
+
+    def record(request: httpx.Request) -> httpx.Response:
+        sent.append(request.url.params["ids"])
+        return httpx.Response(200, json={"count": 0, "value": []})
+
+    async with _reader(record, SMALL_SESSION) as reader:
+        await reader.get_work_items([1, 2])
+        with pytest.raises(ReadCapExceededError, match="session cap of 3"):
+            await reader.get_work_items([3, 4])
+        await reader.get_work_items([3])
+        with pytest.raises(ReadCapExceededError):
+            await reader.get_work_items([1])
+
+    assert sent == ["1,2", "3"]
+
+
+@pytest.mark.anyio
+async def test_ids_count_toward_the_session_cap_even_when_the_read_fails() -> None:
+    async with _reader(_responds({}, status=500), SMALL_SESSION) as reader:
+        with pytest.raises(AzureDevOpsError):
+            await reader.get_work_items([1, 2, 3])
+        with pytest.raises(ReadCapExceededError):
+            await reader.get_work_items([4])
+
+
+@pytest.mark.anyio
+async def test_ids_count_toward_the_session_cap_even_when_nothing_comes_back() -> None:
+    async with _reader(_responds({"count": 0, "value": []}), SMALL_SESSION) as reader:
+        assert await reader.get_work_items([1, 2, 3]) == ()
+        with pytest.raises(ReadCapExceededError):
+            await reader.get_work_items([4])
+
+
+@pytest.mark.anyio
+async def test_duplicate_ids_count_once_toward_the_session_cap() -> None:
+    async with _reader(_responds({"count": 0, "value": []}), SMALL_SESSION) as reader:
+        await reader.get_work_items([1, 1, 2, 2, 3])
+
+
+@pytest.mark.parametrize("cap", [0, -1])
+def test_the_session_cap_must_be_positive(cap: int) -> None:
+    with pytest.raises(ValidationError, match="max_work_items_per_session"):
+        CONFIG.model_validate({**CONFIG.model_dump(), "max_work_items_per_session": cap})

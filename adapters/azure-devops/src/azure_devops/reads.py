@@ -15,7 +15,7 @@ from azure_devops.allowlist import AllowedRequest, AllowlistTransport, find, ope
 from azure_devops.config import AzureDevOpsConfig
 from azure_devops.models import WORK_ITEM_FIELDS, WorkItem, WorkItemBatch
 
-__all__ = ["AzureDevOpsError", "WorkItemReader"]
+__all__ = ["AzureDevOpsError", "ReadCapExceededError", "WorkItemReader"]
 
 # The path and api-version come from the allowlist, so a version bump has one place to change.
 GET_WORK_ITEMS = find("get-work-items")
@@ -26,8 +26,16 @@ class AzureDevOpsError(Exception):
     """Azure DevOps refused the request or answered with something unusable."""
 
 
+class ReadCapExceededError(Exception):
+    """The read would take the session past its cap, so it was not sent."""
+
+
 class WorkItemReader:
-    """Reads work items from the one project in `config`."""
+    """Reads work items from the one project in `config`, for one session.
+
+    The session read cap counts every id this reader has requested, so the agent loop
+    constructs one reader per session and never shares it between sessions.
+    """
 
     def __init__(
         self, config: AzureDevOpsConfig, *, transport: httpx.AsyncBaseTransport | None = None
@@ -46,6 +54,7 @@ class WorkItemReader:
             # A redirect could send the request, and its credential, somewhere unlisted.
             follow_redirects=False,
         )
+        self._work_items_requested = 0
 
     async def __aenter__(self) -> Self:
         return self
@@ -65,11 +74,13 @@ class WorkItemReader:
         """Read work items by id, dropping any that belong to another project.
 
         Ids Azure DevOps cannot return are omitted rather than failing the whole batch.
-        Raises `ValueError` for bad ids and `AzureDevOpsError` when Azure DevOps fails.
+        Raises `ValueError` for bad ids, `ReadCapExceededError` when the session cap would be
+        passed, and `AzureDevOpsError` when Azure DevOps fails.
         `RequestNotAllowedError` is deliberately not wrapped: it means this code built a
         request the allowlist refuses, which is a bug to surface, not an outage to handle.
         """
         requested = self._checked_ids(ids)
+        self._count_toward_session_cap(len(requested))
         response = await self._get(
             GET_WORK_ITEMS,
             {
@@ -94,6 +105,17 @@ class WorkItemReader:
                 f"{len(unique)} ids exceeds the cap of {self._config.max_work_item_ids_per_call}"
             )
         return unique
+
+    def _count_toward_session_cap(self, count: int) -> None:
+        # Counted before sending, whatever comes back: a failed or filtered read still
+        # reached Azure DevOps, and retrying it must not reset the budget.
+        cap = self._config.max_work_items_per_session
+        if self._work_items_requested + count > cap:
+            raise ReadCapExceededError(
+                f"{count} more work items exceeds the session cap of {cap}; "
+                f"{cap - self._work_items_requested} remain"
+            )
+        self._work_items_requested += count
 
     async def _get(self, operation: AllowedRequest, params: dict[str, str]) -> httpx.Response:
         try:
