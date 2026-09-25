@@ -443,12 +443,25 @@ async def test_a_limit_over_the_configured_cap_is_refused_before_a_request_is_se
         pytest.param("", id="empty"),
         pytest.param(" Bug", id="leading-space"),
         pytest.param("x" * 129, id="too-long"),
+        pytest.param("Bug\u02bc", id="modifier-letter-apostrophe"),
+        pytest.param("Bu\u200dg", id="zero-width-joiner"),
+        pytest.param("Bug\uff07", id="fullwidth-apostrophe"),
+        pytest.param("Bug\u00a0New", id="no-break-space"),
     ],
 )
 @pytest.mark.parametrize("field", ["types", "states", "tags"])
 def test_a_value_that_could_change_the_query_is_refused(field: str, value: str) -> None:
     with pytest.raises(ValidationError):
         WorkItemQuery.model_validate({field: [value]})
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["User Story", "v1.2", "needs-refinement", "\u00c7al\u0131\u015fma \u00f6\u011fesi", "日本"],
+)
+def test_names_in_any_script_are_accepted(value: str) -> None:
+    query = WorkItemQuery(tags=(value,))
+    assert query.to_wiql().count(f"'{value}'") == 1
 
 
 @pytest.mark.parametrize("extra", [{"wiql": "SELECT *"}, {"project": "Other"}, {"limit": 0}])

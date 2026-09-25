@@ -13,7 +13,7 @@ The identifier is the operation name Safety Policies use (`safety-layer/README.m
 | Operation | Identifier | Kind | Request (api-version at adoption) | Limits |
 |---|---|---|---|---|
 | Get work items | `get-work-items` | read | `GET _apis/wit/workitems` (7.1) | Items from other projects are dropped, after the whole batch is parsed: a malformed item from another project fails the call |
-| Find work items | `find-work-items` | read | `POST _apis/wit/wiql` (7.1) | Built from structured filters (types, states, tags) whose values cannot contain WIQL syntax; the agent never supplies WIQL; `[System.TeamProject] = @project` is always added; returns ids only, capped by `max_query_results` in the request (`$top`) and on the response |
+| Find work items | `find-work-items` | read | `POST _apis/wit/wiql` (7.1) | Built from structured filters (types, states, tags) whose values cannot contain WIQL syntax; the agent never supplies WIQL; `[System.TeamProject] = @project` is always added; returns ids only, capped by `max_query_results` in the request (`$top`) and on the response; queries do not count toward the session read cap, because reading the ids' content does |
 | Get work item comments | `get-work-item-comments` | read | `GET _apis/wit/workItems/{id}/comments` (7.1-preview.4) | Configured project only |
 | Get wiki page | `get-wiki-page` | read | `GET _apis/wiki/wikis/{wikiIdentifier}/pages` (7.1) | Configured wikis only |
 | Update work item | `update-work-item` | write, Safety Layer only | `PATCH _apis/wit/workitems/{id}` (7.1) | Integer id in the configured project; query string is `api-version` only; JSON Patch starts with a `test` on `/rev` from the preview read |

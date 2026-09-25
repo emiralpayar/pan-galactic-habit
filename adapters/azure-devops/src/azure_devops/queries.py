@@ -12,9 +12,16 @@ from pydantic import BaseModel, ConfigDict, Field, Strict
 
 __all__ = ["WorkItemQuery"]
 
-# Letters, digits, and `_` (\w), plus inner spaces, `-`, and `.`: enough for type, state, and
-# tag names, and nothing that WIQL treats as syntax (`'`, `"`, `[`, `]`, `@`, `(`, `)`, `,`).
-FilterValue = Annotated[str, Strict(), Field(pattern=r"^\w(?:[\w .-]{0,126}\w)?$", max_length=128)]
+# Letters in any script, digits, and `_`, plus inner spaces, `-`, and `.`: enough for type,
+# state, and tag names, and nothing that WIQL treats as syntax (`'`, `"`, `[`, `]`, `@`, `(`,
+# `)`, `,`). Modifier letters (`\p{Lm}`, e.g. U+02BC) are excluded because some look like
+# quotes, and so are the joiners and marks that `\w` would accept. The syntax is Rust regex,
+# which pydantic-core uses: `--` subtracts one class from another.
+_WORD = r"[\p{L}\p{N}_--\p{Lm}]"
+_INNER = r"[[\p{L}\p{N}_ .\-]--\p{Lm}]"
+FilterValue = Annotated[
+    str, Strict(), Field(pattern=rf"^{_WORD}(?:{_INNER}{{0,126}}{_WORD})?$", max_length=128)
+]
 FilterValues = Annotated[tuple[FilterValue, ...], Field(max_length=10)]
 
 
