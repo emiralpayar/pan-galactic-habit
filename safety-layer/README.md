@@ -1,6 +1,6 @@
 # Safety Layer
 
-> **Status:** in progress — Phase 1. The Safety Policy loader exists; write validation, budgets, Write Confirmation, and audit do not. **Safety-critical.** Every change requires a `Safety-Impact` declaration and code owner approval.
+> **Status:** in progress — Phase 1. The Safety Policy loader and per-call and per-session budgets exist; write validation, per-time-window budgets, Write Confirmation, and audit do not. **Safety-critical.** Every change requires a `Safety-Impact` declaration and code owner approval.
 
 The deterministic (non-LLM) engine that gates every write to an external system (ARCHITECTURE.md §2, §5.2). The engine is shared; what each habit may write is defined by that habit's `policy/`.
 
@@ -47,6 +47,15 @@ budgets:                        # per_call <= per_session
 - **Fail closed.** A missing or unreadable file, invalid YAML, unknown keys, wrong types, or a policy for another habit raise `PolicyError`. Duplicate keys, anchors, aliases, merge keys, explicit tags, and integers that are not plain decimal (`010`, `0x10`, `1:30`) are rejected too, because each can make the loaded policy differ from the diff a reviewer approved.
 - **Only from the loader.** Code that enforces a policy must take it from `load_policy`, never build a `SafetyPolicy` directly: constructing one skips the file, the habit check, or (with `model_construct`) validation.
 - **Write Confirmation is not configurable.** It is an engine invariant, so the policy has no setting for it.
+
+## Budgets
+
+`safety_layer.budgets.SessionBudget` enforces a policy's `per_call` and `per_session` budgets for one session; build one per session from a policy returned by `load_policy`.
+
+- **Reserve, then commit or release.** `reserve(count)` holds budget for all the writes in one proposal, or rejects the whole proposal and holds nothing. The returned `Reservation` is committed once its writes execute, or released if they are rejected or not confirmed. Each reservation settles exactly once, and only against the budget that issued it; anything else raises, because it would count a write twice or return budget that was spent.
+- **Pending counts.** Reservations waiting for confirmation count against the session, so two pending proposals cannot together exceed it.
+- **Fail closed.** `reserve` never raises: a count that is not a positive integer, or any unexpected error, is a `BudgetRejection`. A policy whose budgets do not validate, for example one built with `model_construct`, raises `PolicyError` instead of producing a budget.
+- **In memory, thread-safe.** Counters live in the process, which ARCHITECTURE.md §5.2 allows for per-session budgets. Per-time-window budgets need the Operational Store and are not enforced yet.
 
 ## Layout
 
