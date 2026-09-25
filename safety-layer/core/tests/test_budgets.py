@@ -3,8 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from safety_layer.budgets import BudgetRejection, Reservation, SessionBudget
+from safety_layer.budgets import Reservation, SessionBudget
 from safety_layer.policy import PolicyError, SafetyPolicy, load_policy
+from safety_layer.write_validation import Rejected
 
 POLICY = """\
 habit: example-habit
@@ -32,7 +33,7 @@ def budget(policy: SafetyPolicy) -> SessionBudget:
     return SessionBudget(policy)
 
 
-def _reserved(result: Reservation | BudgetRejection) -> Reservation:
+def _reserved(result: Reservation | Rejected) -> Reservation:
     assert isinstance(result, Reservation), result
     return result
 
@@ -49,7 +50,7 @@ def test_a_proposal_over_per_call_is_rejected_whole_and_reserves_nothing(
 ) -> None:
     result = budget.reserve(3)
 
-    assert isinstance(result, BudgetRejection)
+    assert isinstance(result, Rejected)
     assert "per-call budget of 2" in result.reason
     assert budget.remaining == 3
 
@@ -59,7 +60,7 @@ def test_writes_stop_at_exactly_per_session(budget: SessionBudget) -> None:
     _reserved(budget.reserve(1)).commit()
 
     result = budget.reserve(1)
-    assert isinstance(result, BudgetRejection)
+    assert isinstance(result, Rejected)
     assert "per-session budget of 3" in result.reason
     assert budget.remaining == 0
 
@@ -67,9 +68,9 @@ def test_writes_stop_at_exactly_per_session(budget: SessionBudget) -> None:
 def test_pending_reservations_count_against_the_session(budget: SessionBudget) -> None:
     first = _reserved(budget.reserve(2))
 
-    assert isinstance(budget.reserve(2), BudgetRejection)
+    assert isinstance(budget.reserve(2), Rejected)
     second = _reserved(budget.reserve(1))
-    assert isinstance(budget.reserve(1), BudgetRejection)
+    assert isinstance(budget.reserve(1), Rejected)
     assert (first.count, second.count, budget.remaining) == (2, 1, 0)
 
 
@@ -84,7 +85,7 @@ def test_a_committed_reservation_does_not_return_its_budget(budget: SessionBudge
     _reserved(budget.reserve(2)).commit()
 
     assert budget.remaining == 1
-    assert isinstance(budget.reserve(2), BudgetRejection)
+    assert isinstance(budget.reserve(2), Rejected)
 
 
 @pytest.mark.parametrize(
@@ -146,7 +147,7 @@ def test_a_reservation_settles_only_with_its_own_budget(policy: SafetyPolicy) ->
 def test_a_bad_count_is_rejected_not_raised(budget: SessionBudget, count: object) -> None:
     result = budget.reserve(count)  # type: ignore[arg-type]
 
-    assert isinstance(result, BudgetRejection)
+    assert isinstance(result, Rejected)
     assert budget.remaining == 3
 
 
@@ -159,7 +160,7 @@ def test_an_unexpected_error_is_a_rejection(
     monkeypatch.setattr(budget, "_check", broken)
     result = budget.reserve(1)
 
-    assert isinstance(result, BudgetRejection)
+    assert isinstance(result, Rejected)
     assert result.reason == "the budget check failed"
     assert budget.remaining == 3
 
@@ -185,7 +186,7 @@ def test_a_policy_with_invalid_budgets_builds_no_tracker(
 
 def test_concurrent_reservations_never_exceed_the_session(policy: SafetyPolicy) -> None:
     budget = SessionBudget(policy)
-    results: list[Reservation | BudgetRejection] = []
+    results: list[Reservation | Rejected] = []
     start = threading.Barrier(20)
 
     def reserve() -> None:

@@ -14,14 +14,10 @@ from dataclasses import dataclass, field
 
 from safety_layer.policy import Budgets, PolicyError, SafetyPolicy
 
-__all__ = ["BudgetRejection", "Reservation", "SessionBudget"]
+# One rejection type for every check in the write path, so callers and audit handle one.
+from safety_layer.write_validation import Rejected
 
-
-@dataclass(frozen=True, slots=True)
-class BudgetRejection:
-    """The proposal was not reserved. Nothing in it may be written."""
-
-    reason: str
+__all__ = ["Reservation", "SessionBudget"]
 
 
 # `eq=False` keeps identity equality and hashing, so the budget can hold its open reservations.
@@ -69,7 +65,7 @@ class SessionBudget:
         with self._lock:
             return self._budgets.per_session - self._committed - self._pending
 
-    def reserve(self, count: int) -> Reservation | BudgetRejection:
+    def reserve(self, count: int) -> Reservation | Rejected:
         """Reserve `count` writes for one proposal, or reject the whole proposal.
 
         Raises no `Exception`: a bad count or an unexpected error is a rejection, and
@@ -84,20 +80,18 @@ class SessionBudget:
                 self._open[reservation] = count
                 return reservation
         except Exception:
-            return BudgetRejection("the budget check failed")
+            return Rejected("the budget check failed")
 
-    def _check(self, count: int) -> BudgetRejection | None:
+    def _check(self, count: int) -> Rejected | None:
         # Exactly `int`: a bool or an int subclass could compare or add unlike a count.
         if type(count) is not int or count <= 0:
-            return BudgetRejection("a proposal must contain a positive whole number of writes")
+            return Rejected("a proposal must contain a positive whole number of writes")
         per_call = self._budgets.per_call
         if count > per_call:
-            return BudgetRejection(f"{count} writes exceeds the per-call budget of {per_call}")
+            return Rejected(f"{count} writes exceeds the per-call budget of {per_call}")
         per_session = self._budgets.per_session
         if self._committed + self._pending + count > per_session:
-            return BudgetRejection(
-                f"{count} writes exceeds the per-session budget of {per_session}"
-            )
+            return Rejected(f"{count} writes exceeds the per-session budget of {per_session}")
         return None
 
     def _settle(self, reservation: Reservation, *, spent: bool) -> None:
