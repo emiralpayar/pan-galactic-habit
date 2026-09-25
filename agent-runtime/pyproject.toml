@@ -1,0 +1,13 @@
+[project]
+name = "agent-runtime"
+version = "0.0.0"
+description = "Port and backends that run agent sessions with a structural Tool Surface."
+requires-python = ">=3.13"
+dependencies = [
+    "claude-agent-sdk==0.2.157",
+    "pydantic==2.13.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13"]
+build-backend = "uv_build"

@@ -5,6 +5,7 @@
 # Keep in sync with .github/CODEOWNERS.
 
 # System safety controls
+agent-runtime/*
 safety-layer/*
 adapters/*
 habits/*/policy/*
