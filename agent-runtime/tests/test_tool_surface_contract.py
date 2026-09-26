@@ -28,7 +28,7 @@ from agent_runtime import (
     ToolSurface,
     ToolSurfaceError,
 )
-from agent_runtime.claude import _check_init, build_environment
+from agent_runtime.claude import _BASE_URL, _check_init, _is_refused, build_environment
 
 
 class ItemId(BaseModel):
@@ -56,8 +56,15 @@ BACKENDS: dict[str, Callable[[], AgentRuntime]] = {
 
 @pytest.fixture(autouse=True)
 def _no_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"):
+    """Run as CI does, even inside a host session that sets variables the backend refuses.
+
+    Only this test process's environment changes; test_environment.py checks the refusal.
+    """
+    for name in ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", _BASE_URL):
         monkeypatch.delenv(name, raising=False)
+    for name, value in list(os.environ.items()):
+        if _is_refused(name, value):
+            monkeypatch.delenv(name)
 
 
 @pytest.mark.anyio
