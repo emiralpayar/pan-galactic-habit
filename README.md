@@ -32,6 +32,7 @@ make check   # runs the same convention and lint checks as CI
 ```text
 habits/             # one folder per habit: agent, memory, safety policy, evals
 adapters/           # system-specific integrations (e.g. Azure DevOps)
+agent-runtime/      # agent runtime port and backends (Claude)
 safety-layer/       # deterministic write-gating engine (shared)
 orchestrator/       # creates new habits as PRs
 improver/           # proposes improvements as PRs
