@@ -60,7 +60,7 @@ def test_two_credentials_are_refused() -> None:
         "CLAUDE_CODE_CLIENT_CERT",
         "CLAUDE_CODE_HTTP_PROXY",
         "CLAUDE_CODE_CUSTOM_OAUTH_URL",
-        # Set by a host Claude Code session; the contract test sets it aside, not the backend.
+        # Set by a host Claude Code session; refused here, and removed only in the contract test.
         "CLAUDE_CODE_MESSAGING_TOKEN",
         "SSL_CERT_FILE",
         "SSL_CERT_DIR",
