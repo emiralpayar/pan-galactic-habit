@@ -77,8 +77,8 @@ Pick a non-draft PR where, since your last review, the author **pushed** or **an
    - An objection to the plan that arrived after the PR was opened is a finding on the PR like any other.
 6. Decide:
    - **Request changes** (`gh pr review <number> --request-changes --body-file <file>`) for blocking findings (a rule violation or a correctness problem), and for questions whose answer decides whether the change is correct.
-   - **Otherwise approve** (`gh pr review <number> --approve --body-file <file>`). Questions in an approving review are non-blocking; the author answers them afterwards, and a gap they reveal becomes a follow-up issue.
-   - **Merge** once the PR is approved and green, and the author has answered every finding and question from your **earlier** reviews: `gh pr merge <number> --squash`, or `--merge` for a `chore/sync-agent-main-…` PR. If checks are still running, merge in a later iteration.
+   - **Otherwise approve** (`gh pr review <number> --approve --body-file <file>`). Questions in an approving review do not block the approval, but they do block the merge until they are answered. A gap an answer reveals becomes a follow-up issue, or a new finding if it is on a safety-critical path.
+   - **Merge** once the PR is approved and green, and the author has answered **every** finding and question you raised, including the ones in the approving review. You come back to the PR when the author answers (see the pick rule above), so this never stalls. If you came back only because the author answered, the code has not changed, and you accept every answer, **merge without posting another review**; a new review would need a new question and start the wait again. Post a new review only when something is still open or the code changed. To merge: `gh pr merge <number> --squash`, or `--merge` for a `chore/sync-agent-main-…` PR. If checks are still running, merge in a later iteration.
 7. **Loop guard.** After **three exchanges on the same point** without agreement, or before posting a **fourth review round** without an approval, add the `needs-human` label and comment with a short summary of **both** positions and the evidence for each, then stop reviewing that PR. A maintainer decides.
 
 ### 3. Sync after a promotion
@@ -114,7 +114,7 @@ Nothing to do: end the iteration and let `/loop` wait before the next one.
 
 - Never commit to or push `main` or `agent-main`. Never approve or merge a PR into `main`. The hook enforces both; if it blocks you, stop and report instead of finding another route.
 - Never approve your own PR, and never merge a PR the other session has not approved.
-- Never merge while a finding or question from an earlier review is unanswered, and never answer a finding with a silent fix.
+- Never merge while any finding or question on the PR is unanswered, including those in the approving review, and never answer a finding with a silent fix.
 - Never withdraw a blocking finding on a safety-critical path because of an argument alone: the code changes, or the PR goes to `needs-human`.
 - Never loosen a guardrail (hooks, rulesets, CODEOWNERS, checks, the Safety Layer, policies) in the same PR as other work. Set `Safety-Impact:` honestly; a `loosens` PR gets the `needs-human` label, and a maintainer decides it.
 - Keep each PR to one concern and small enough to review in one pass.
