@@ -13,12 +13,14 @@ from pydantic import BaseModel, ValidationError
 
 from azure_devops.allowlist import AllowedRequest, AllowlistTransport, find, operations
 from azure_devops.config import AzureDevOpsConfig
-from azure_devops.models import WORK_ITEM_FIELDS, WorkItem, WorkItemBatch
+from azure_devops.models import WORK_ITEM_FIELDS, QueryResult, WorkItem, WorkItemBatch
+from azure_devops.queries import WorkItemQuery
 
 __all__ = ["AzureDevOpsError", "ReadCapExceededError", "WorkItemReader"]
 
 # The path and api-version come from the allowlist, so a version bump has one place to change.
 GET_WORK_ITEMS = find("get-work-items")
+FIND_WORK_ITEMS = find("find-work-items")
 TIMEOUT_SECONDS = 30.0
 
 
@@ -82,7 +84,7 @@ class WorkItemReader:
         """
         requested = self._checked_ids(ids)
         self._count_toward_session_cap(len(requested))
-        response = await self._get(
+        response = await self._send(
             GET_WORK_ITEMS,
             {
                 "ids": ",".join(str(id_) for id_ in requested),
@@ -94,6 +96,26 @@ class WorkItemReader:
         batch = self._parse(response, WorkItemBatch)
         project = self._config.project.casefold()
         return tuple(item for item in batch.items if item.project.casefold() == project)
+
+    async def find_work_items(self, query: WorkItemQuery) -> tuple[int, ...]:
+        """The ids of work items in the configured project that match `query`, newest first.
+
+        Only ids come back; read their content with `get_work_items`, which drops items
+        from other projects and counts toward the session read cap. At most `query.limit`
+        ids are returned, or the configured cap, even if Azure DevOps sends more.
+        Raises `ValueError` for a limit over the cap and `AzureDevOpsError` when Azure
+        DevOps fails.
+        """
+        cap = self._config.max_query_results
+        limit = cap if query.limit is None else query.limit
+        if limit > cap:
+            raise ValueError(f"a limit of {limit} exceeds the cap of {cap}")
+        response = await self._send(
+            FIND_WORK_ITEMS,
+            {"$top": str(limit), "api-version": FIND_WORK_ITEMS.api_version},
+            json={"query": query.to_wiql()},
+        )
+        return self._parse(response, QueryResult).ids[:limit]
 
     def _checked_ids(self, ids: Sequence[int]) -> tuple[int, ...]:
         if not ids:
@@ -118,9 +140,17 @@ class WorkItemReader:
             )
         self._work_items_requested += count
 
-    async def _get(self, operation: AllowedRequest, params: dict[str, str]) -> httpx.Response:
+    async def _send(
+        self,
+        operation: AllowedRequest,
+        params: dict[str, str],
+        *,
+        json: dict[str, str] | None = None,
+    ) -> httpx.Response:
         try:
-            response = await self._client.get(operation.path, params=params)
+            response = await self._client.request(
+                operation.method, operation.path, params=params, json=json
+            )
         except httpx.HTTPError as error:
             # str(error) can hold the request URL but never the Authorization header.
             raise AzureDevOpsError(f"{operation.operation} failed: {error}") from error
