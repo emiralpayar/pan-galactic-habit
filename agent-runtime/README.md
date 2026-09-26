@@ -39,6 +39,7 @@ The CLI reads its settings from an empty temporary directory, not the user's, an
 
 `tests/test_tool_surface_contract.py` starts each backend with its production configuration and the installed CLI runtime, and compares the tools it reports with the Tool Surface.
 The CLI reports its tool list and MCP servers in its `init` message, before the first model turn, so the test needs no credential and runs without calling a model. `effective_tools` sends a placeholder prompt to get that message, so with a credential set a model call may already have started when it interrupts: run it without one.
+The test removes any credential, and every variable the backend would refuse, from its own process environment before it starts, so it runs the same inside a host Claude Code session (which sets `CLAUDE_CODE_MESSAGING_TOKEN`) as in CI. It uses the backend's own refusal predicate, and `tests/test_environment.py` checks that the backend still refuses them.
 A companion test enables the SDK's built-in tools and checks that the report shows them, so the contract cannot pass by reading nothing.
 New backends add themselves to `BACKENDS` in that test.
 
