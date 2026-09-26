@@ -62,7 +62,7 @@ docs: add adr for trunk-based development
 ```
 
 - Types: `feat` `fix` `docs` `refactor` `perf` `test` `build` `ci` `chore` `revert`
-- Scopes (optional): `repo` `dev` `ci` `deps` `docs` `safety-layer` `adapters` `orchestrator` `improver` `chat` `deploy` `evals`, or any habit or adapter directory name
+- Scopes (optional): `repo` `dev` `ci` `deps` `docs` `agent-runtime` `safety-layer` `adapters` `orchestrator` `improver` `chat` `deploy` `evals`, or any habit or adapter directory name
 - Subject: imperative, lowercase first letter, no trailing period, header ≤ 72 characters
 
 **Attribution.** AI-assisted commits end with a `Co-Authored-By:` trailer naming the model. Do not remove attribution trailers.
@@ -85,6 +85,7 @@ scripts/checks/safety-guard.sh --base origin/main
 | `habits/<name>/policy/` | Safety Policy for the habit | ✅ |
 | `habits/<name>/evals/` | Fixtures and expected qualities | |
 | `adapters/` | System-specific integrations, request allowlists | ✅ |
+| `agent-runtime/` | Agent Runtime port and backends; the model sees only the Tool Surface | ✅ |
 | `safety-layer/` | Deterministic write-gating engine | ✅ |
 | `orchestrator/` | Meta-agent that opens habit-request issues (never PRs) | |
 | `improver/` | Meta-agent that opens PRs | |
@@ -95,4 +96,4 @@ scripts/checks/safety-guard.sh --base origin/main
 
 ## Current phase
 
-Phase 1, in progress: build the Backlog Refiner without the habit template (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Implemented so far: the Safety Policy loader (`safety-layer/core`), the Backlog Refiner's policy, and the Azure DevOps adapter's work item reads. The rest of `habits/`, `orchestrator/`, `improver/`, and `interface/` contains only READMEs and placeholders. Progress is tracked in #13.
+Phase 1, in progress: build the Backlog Refiner without the habit template (ARCHITECTURE.md §12), in Python (ADR 0003) on the Agent Runtime (ADR 0004), with a REST-based Azure DevOps adapter (ADR 0005). Implemented so far: the Safety Policy loader (`safety-layer/core`), the Backlog Refiner's policy, the Azure DevOps adapter's work item reads, and the Agent Runtime port with its Claude backend (`agent-runtime`). The rest of `habits/`, `orchestrator/`, `improver/`, and `interface/` contains only READMEs and placeholders. Progress is tracked in #13.

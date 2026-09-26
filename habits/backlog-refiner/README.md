@@ -1,6 +1,6 @@
 # Backlog Refiner
 
-> **Status:** in progress — Phase 1 (ARCHITECTURE.md §12). Only the Safety Policy exists so far. This habit is built without the habit template and becomes the reference it is later extracted from.
+> **Status:** in progress — Phase 1 (ARCHITECTURE.md §12). The Safety Policy and memory exist; the agent loop and chat wiring are not built yet. This habit is built without the habit template and becomes the reference it is later extracted from.
 
 ## Purpose
 

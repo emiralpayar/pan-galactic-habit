@@ -8,7 +8,7 @@
 CONVENTIONAL_TYPES="feat fix docs refactor perf test build ci chore revert"
 
 # Scopes that are not derived from directory names.
-FIXED_SCOPES="repo dev ci deps docs safety-layer adapters orchestrator improver chat evals deploy"
+FIXED_SCOPES="repo dev ci deps docs agent-runtime safety-layer adapters orchestrator improver chat evals deploy"
 
 # Autonomous agents that may author branches under agent/<agent>/...
 AGENT_NAME_REGEX='(orchestrator|improver|habit-[a-z0-9]+(-[a-z0-9]+)*)'

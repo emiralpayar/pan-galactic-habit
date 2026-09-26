@@ -5,7 +5,7 @@
 required-version = ">=0.12.15,<0.13"
 
 [tool.uv.workspace]
-members = ["adapters/azure-devops", "safety-layer/core"]
+members = ["adapters/azure-devops", "agent-runtime", "safety-layer/core"]
 
 [dependency-groups]
 dev = [
@@ -40,39 +40,53 @@ select = ["E", "W", "F", "I", "N", "B", "UP", "SIM", "C4", "PT", "RUF", "S"]
 python_version = "3.13"
 strict = true
 explicit_package_bases = true
-mypy_path = ["adapters/azure-devops/src", "safety-layer/core/src"]
+mypy_path = ["adapters/azure-devops/src", "agent-runtime/src", "safety-layer/core/src"]
 files = [
     "tests",
     "adapters/azure-devops/src",
     "adapters/azure-devops/tests",
+    "agent-runtime/src",
+    "agent-runtime/tests",
     "safety-layer/core/src",
     "safety-layer/core/tests",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "adapters/azure-devops/tests", "safety-layer/core/tests"]
+testpaths = [
+    "tests",
+    "adapters/azure-devops/tests",
+    "agent-runtime/tests",
+    "safety-layer/core/tests",
+]
 addopts = ["--strict-config", "--strict-markers", "--import-mode=importlib", "-ra"]
 xfail_strict = true
 filterwarnings = ["error"]
 
 [tool.importlinter]
-root_packages = ["azure_devops", "safety_layer"]
+root_packages = ["agent_runtime", "azure_devops", "safety_layer"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
 # Safety Layer invariant 1: decisions are deterministic code, never an LLM or a network call.
+# Forbidden third-party packages here catch only a direct `import <name>` from our own
+# source. import-linter (via grimp) puts each external package in the graph as one opaque
+# node and does not parse its internal source, so a package a listed one depends on
+# internally (e.g. claude-agent-sdk's own use of `mcp`) is not traced and is not caught here.
 name = "The Safety Layer imports no agent SDK, LLM client, or HTTP client"
 type = "forbidden"
 source_modules = ["safety_layer"]
 # Standard-library network modules are banned by ruff in safety-layer/core/ruff.toml.
 forbidden_modules = [
+    "agent_runtime",
     "aiohttp",
     "anthropic",
     "azure_devops",
     "claude_agent_sdk",
     "copilot",
     "httpcore",
+    "httpcore2",
     "httpx",
+    "httpx2",
     "mcp",
     "openai",
     "requests",
@@ -87,12 +101,40 @@ name = "The Azure DevOps adapter imports no other HTTP client, agent SDK, or LLM
 type = "forbidden"
 source_modules = ["azure_devops"]
 forbidden_modules = [
+    "agent_runtime",
     "aiohttp",
     "anthropic",
     "claude_agent_sdk",
     "copilot",
+    "httpcore2",
+    "httpx2",
     "mcp",
     "openai",
     "requests",
+    "urllib3",
+]
+
+[[tool.importlinter.contracts]]
+# Only the Agent Runtime imports an agent SDK (ADR 0004): its backends configure the SDK so
+# the model sees the Tool Surface and nothing else. It stays independent of what the tools
+# do, so it imports no adapter and no Safety Layer code, and it makes no direct HTTP calls.
+# `mcp` and `anthropic` are listed for the same reason as in the Safety Layer's contract
+# above: they catch a direct import from this package's own source, not claude-agent-sdk's
+# internal use of `mcp` (see the comment there) — the SDK confinement itself is structural
+# (this is the only package allowed to import it), not from this forbidden-modules list.
+name = "The Agent Runtime imports no adapter, Safety Layer code, or HTTP client"
+type = "forbidden"
+source_modules = ["agent_runtime"]
+forbidden_modules = [
+    "aiohttp",
+    "anthropic",
+    "azure_devops",
+    "httpcore",
+    "httpcore2",
+    "httpx",
+    "httpx2",
+    "mcp",
+    "requests",
+    "safety_layer",
     "urllib3",
 ]
