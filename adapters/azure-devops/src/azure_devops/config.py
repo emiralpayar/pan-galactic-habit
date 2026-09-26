@@ -33,6 +33,8 @@ class AzureDevOpsConfig(BaseModel):
     # until the Backlog Refiner's real usage shows what a session needs. The upper bound
     # keeps a mistyped value from switching the cap off.
     max_work_items_per_session: Annotated[int, Field(gt=0, le=1000)] = 200
+    # ADR 0005 caps query results. A placeholder too; Azure DevOps itself allows 20000.
+    max_query_results: Annotated[int, Field(gt=0, le=200)] = 50
 
     @model_validator(mode="after")
     def _project_is_a_single_path_segment(self) -> Self:

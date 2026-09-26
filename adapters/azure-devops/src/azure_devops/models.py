@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-__all__ = ["WorkItem", "WorkItemBatch"]
+__all__ = ["QueryResult", "WorkItem", "WorkItemBatch"]
 
 PROJECT_FIELD = "System.TeamProject"
 
@@ -78,3 +78,17 @@ class WorkItemBatch(_External):
     @property
     def items(self) -> tuple[WorkItem, ...]:
         return tuple(item for item in self.value if item is not None)
+
+
+class WorkItemReference(_External):
+    id: Annotated[int, Field(gt=0, strict=True)]
+
+
+class QueryResult(_External):
+    """A `wiql` response: the ids that matched, in the query's order, and nothing else."""
+
+    work_items: tuple[WorkItemReference, ...] = Field(alias="workItems")
+
+    @property
+    def ids(self) -> tuple[int, ...]:
+        return tuple(dict.fromkeys(item.id for item in self.work_items))
