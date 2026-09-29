@@ -90,11 +90,11 @@ jobs:
       # Claude may record a dependency (`uv add --no-sync`, `uv lock`), which needs uv on
       # the runner; ubuntu-latest does not ship it. Same pin as python.yml.
       # setup-uv publishes no major-version tags, so it is pinned to a release commit.
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
       - name: Run Claude
         # Pinned to a commit, not the moving v1 tag, because this step receives the OAuth secret.
-        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
+        uses: anthropics/claude-code-action@756cc22e19660d20e8cc9496b4f242475a7f7790 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           include_comments_by_actor: ${{ steps.collaborators.outputs.logins }}
