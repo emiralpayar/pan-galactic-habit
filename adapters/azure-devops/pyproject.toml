@@ -5,7 +5,7 @@ description = "Allowlisted integration with the Azure DevOps REST API."
 requires-python = ">=3.13"
 dependencies = [
     "httpx==0.28.1",
-    "pydantic==2.13.5",
+    "pydantic==2.14.0",
 ]
 
 [build-system]

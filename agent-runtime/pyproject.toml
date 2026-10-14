@@ -5,7 +5,7 @@ description = "Port and backends that run agent sessions with a structural Tool 
 requires-python = ">=3.13"
 dependencies = [
     "claude-agent-sdk==0.2.157",
-    "pydantic==2.13.5",
+    "pydantic==2.14.0",
 ]
 
 [build-system]
